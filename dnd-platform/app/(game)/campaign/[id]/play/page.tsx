@@ -126,7 +126,7 @@ export default function PlayPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="flex flex-col h-screen bg-transparent">
       <InitiativeTracker />
       <div className="flex flex-1 overflow-hidden">
         <div className="flex flex-col flex-1 overflow-hidden">

@@ -45,8 +45,8 @@ export default function CreateCampaignPage() {
 }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-8">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-8 w-full max-w-lg">
+    <div className="min-h-screen bg-transparent flex items-center justify-center p-8">
+      <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md rounded-2xl border border-gray-200 dark:border-gray-700 p-8 w-full max-w-lg">
 
         <button
           onClick={() => router.push('/dashboard')}
@@ -68,7 +68,7 @@ export default function CreateCampaignPage() {
             value={name}
             onChange={e => setName(e.target.value)}
             placeholder="The Lost Mines of Phandelver"
-            className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-purple-400"
+            className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-md text-gray-900 dark:text-gray-100 focus:outline-none focus:border-emerald-400"
           />
         </div>
 
@@ -84,7 +84,7 @@ export default function CreateCampaignPage() {
                 onClick={() => setSetting(s.value)}
                 className={`flex items-center gap-2 px-4 py-3 rounded-xl border text-left transition-all ${
                   setting === s.value
-                    ? 'border-purple-400 bg-purple-50 dark:bg-purple-950'
+                    ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-950'
                     : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                 }`}
               >
@@ -105,7 +105,7 @@ export default function CreateCampaignPage() {
               onClick={() => setDmMode('ai')}
               className={`p-4 rounded-xl border text-left transition-all ${
                 dmMode === 'ai'
-                  ? 'border-purple-400 bg-purple-50 dark:bg-purple-950'
+                  ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-950'
                   : 'border-gray-200 dark:border-gray-700'
               }`}
             >
@@ -116,7 +116,7 @@ export default function CreateCampaignPage() {
               onClick={() => setDmMode('human')}
               className={`p-4 rounded-xl border text-left transition-all ${
                 dmMode === 'human'
-                  ? 'border-purple-400 bg-purple-50 dark:bg-purple-950'
+                  ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-950'
                   : 'border-gray-200 dark:border-gray-700'
               }`}
             >
@@ -129,7 +129,7 @@ export default function CreateCampaignPage() {
         <button
           onClick={handleCreate}
           disabled={!name.trim() || loading}
-          className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-medium rounded-xl py-3 transition-colors"
+          className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-medium rounded-xl py-3 transition-colors"
         >
           {loading ? 'Creating...' : 'Create campaign'}
         </button>

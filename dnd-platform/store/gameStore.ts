@@ -13,6 +13,8 @@ interface GameStore {
   isLoading: boolean
   isDMThinking: boolean
   pendingRollRequest: RollRequest | null
+  isRollModalOpen: boolean
+  lastRollResult: { roll: number, total: number, dc?: number, success: boolean, type: string } | null
 
   setCampaign: (campaign: Campaign) => void
   setCharacters: (characters: Character[]) => void
@@ -24,6 +26,8 @@ interface GameStore {
   setLoading: (loading: boolean) => void
   setDMThinking: (thinking: boolean) => void
   setPendingRollRequest: (roll: RollRequest | null) => void
+  setRollModalOpen: (open: boolean) => void
+  setLastRollResult: (result: { roll: number, total: number, dc?: number, success: boolean, type: string } | null) => void
 }
 
 export interface RollRequest {
@@ -44,6 +48,8 @@ export const useGameStore = create<GameStore>((set) => ({
   isLoading: false,
   isDMThinking: false,
   pendingRollRequest: null,
+  isRollModalOpen: false,
+  lastRollResult: null,
 
   setCampaign: (campaign) => set({ campaign }),
   setCharacters: (characters) => set({ characters }),
@@ -61,5 +67,7 @@ export const useGameStore = create<GameStore>((set) => ({
   })),
   setLoading: (isLoading) => set({ isLoading }),
   setDMThinking: (isDMThinking) => set({ isDMThinking }),
-  setPendingRollRequest: (pendingRollRequest) => set({ pendingRollRequest })
+  setPendingRollRequest: (pendingRollRequest) => set({ pendingRollRequest }),
+  setRollModalOpen: (isRollModalOpen) => set({ isRollModalOpen }),
+  setLastRollResult: (lastRollResult) => set({ lastRollResult })
 }))

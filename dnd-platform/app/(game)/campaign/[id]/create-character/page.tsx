@@ -109,14 +109,14 @@ export default function CreateCharacterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-8">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-8 w-full max-w-2xl">
+    <div className="min-h-screen bg-transparent flex items-center justify-center p-8">
+      <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md rounded-2xl border border-gray-200 dark:border-gray-700 p-8 w-full max-w-2xl">
 
         {/* Progress */}
         <div className="flex gap-2 mb-8">
           {[1, 2, 3].map(s => (
             <div key={s} className={`flex-1 h-1.5 rounded-full ${
-              s <= step ? 'bg-purple-500' : 'bg-gray-200 dark:bg-gray-700'
+              s <= step ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-gray-700'
             }`} />
           ))}
         </div>
@@ -137,7 +137,7 @@ export default function CreateCharacterPage() {
                     onClick={() => setRace(r)}
                     className={`p-3 rounded-xl border text-sm transition-all ${
                       race === r
-                        ? 'border-purple-400 bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300'
+                        ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
                         : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-300'
                     }`}
                   >
@@ -164,7 +164,7 @@ export default function CreateCharacterPage() {
                     onClick={() => setCls(c)}
                     className={`p-3 rounded-xl border text-sm transition-all ${
                       cls === c
-                        ? 'border-purple-400 bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300'
+                        ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
                         : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-300'
                     }`}
                   >
@@ -184,7 +184,7 @@ export default function CreateCharacterPage() {
             <button
               onClick={() => setStep(2)}
               disabled={!race || !cls}
-              className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-medium rounded-xl py-3 transition-colors"
+              className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-medium rounded-xl py-3 transition-colors"
             >
               Next →
             </button>
@@ -213,8 +213,8 @@ export default function CreateCharacterPage() {
                       used
                         ? 'border-gray-200 dark:border-gray-700 text-gray-300 dark:text-gray-600 cursor-default'
                         : (scores as Record<string, number>).selected === score
-                          ? 'border-purple-400 bg-purple-50 dark:bg-purple-950 text-purple-700'
-                          : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-purple-300'
+                          ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-950 text-emerald-700'
+                          : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-emerald-300'
                     }`}
                   >
                     {score}
@@ -239,8 +239,8 @@ export default function CreateCharacterPage() {
                     }}
                     className={`p-4 rounded-xl border text-center transition-all ${
                       assigned
-                        ? 'border-purple-400 bg-purple-50 dark:bg-purple-950'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-purple-300'
+                        ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-950'
+                        : 'border-gray-200 dark:border-gray-700 hover:border-emerald-300'
                     }`}
                   >
                     <p className="text-xs text-gray-400 uppercase font-medium">{ability}</p>
@@ -248,7 +248,7 @@ export default function CreateCharacterPage() {
                       {assigned ? final : '—'}
                     </p>
                     {assigned && racial > 0 && (
-                      <p className="text-xs text-purple-500">
+                      <p className="text-xs text-emerald-500">
                         {assigned} +{racial} racial
                       </p>
                     )}
@@ -270,7 +270,7 @@ export default function CreateCharacterPage() {
               <button
                 onClick={() => setStep(3)}
                 disabled={!allAssigned}
-                className="flex-2 flex-1 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-medium rounded-xl py-3 transition-colors"
+                className="flex-2 flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-medium rounded-xl py-3 transition-colors"
               >
                 Next →
               </button>
@@ -293,13 +293,13 @@ export default function CreateCharacterPage() {
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder="e.g. Aelindra Swiftbow"
-                className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-purple-400"
+                className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-md text-gray-900 dark:text-gray-100 focus:outline-none focus:border-emerald-400"
                 autoFocus
               />
             </div>
 
             {/* Summary */}
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 mb-8">
+            <div className="bg-gray-50/80 dark:bg-gray-800/80 backdrop-blur-md rounded-xl p-4 mb-8">
               <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">
                 {name || 'Your character'} — {race} {cls}, Level 1
               </p>
@@ -347,7 +347,7 @@ export default function CreateCharacterPage() {
               <button
                 onClick={handleCreate}
                 disabled={!name.trim() || loading}
-                className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-medium rounded-xl py-3 transition-colors"
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-medium rounded-xl py-3 transition-colors"
               >
                 {loading ? 'Creating...' : 'Begin adventure'}
               </button>

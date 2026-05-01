@@ -5,7 +5,7 @@ interface BadgeProps {
 
 export function Badge({ children, color = 'gray' }: BadgeProps) {
   const colors = {
-    purple: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+    purple: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200',
     teal:   'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200',
     red:    'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
     amber:  'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',

@@ -40,7 +40,7 @@ export function InitiativeTracker() {
                 <span className={`text-xs font-medium truncate ${
                   combatant.type === 'monster'
                     ? 'text-red-600 dark:text-red-400'
-                    : 'text-purple-600 dark:text-purple-400'
+                    : 'text-emerald-600 dark:text-emerald-400'
                 }`}>
                   {combatant.name}
                 </span>

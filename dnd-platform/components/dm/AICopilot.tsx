@@ -65,12 +65,12 @@ export function AICopilot({ campaignId, onInsert }: AICopilotProps) {
           onChange={e => setPrompt(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && prompt.trim() && askAI(prompt)}
           placeholder="Ask AI for help..."
-          className="flex-1 text-sm px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-purple-400"
+          className="flex-1 text-sm px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-emerald-400"
         />
         <button
           onClick={() => prompt.trim() && askAI(prompt)}
           disabled={loading || !prompt.trim()}
-          className="text-sm px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
+          className="text-sm px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors"
         >
           Ask
         </button>
@@ -81,13 +81,13 @@ export function AICopilot({ campaignId, onInsert }: AICopilotProps) {
         <p className="text-sm text-gray-400 italic animate-pulse">AI is thinking...</p>
       )}
       {suggestion && !loading && (
-        <div className="bg-purple-50 dark:bg-purple-950 border border-purple-200 dark:border-purple-800 rounded-lg p-3">
+        <div className="bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800 rounded-lg p-3">
           <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-wrap">
             {suggestion}
           </p>
           <button
             onClick={() => onInsert(suggestion)}
-            className="mt-2 text-xs text-purple-600 dark:text-purple-400 hover:underline"
+            className="mt-2 text-xs text-emerald-600 dark:text-emerald-400 hover:underline"
           >
             Insert into narration →
           </button>

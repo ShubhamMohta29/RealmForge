@@ -83,11 +83,11 @@ export default function DMConsolePage() {
   ]
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="flex h-screen bg-transparent">
 
       {/* Left: story log + narration input (what players see) */}
       <div className="flex flex-col flex-1 min-w-0 border-r border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md">
           <div>
             <p className="font-medium text-gray-900 dark:text-gray-100 text-sm">
               {campaign?.name || 'Campaign'}
@@ -104,7 +104,7 @@ export default function DMConsolePage() {
 
         <StoryLog />
 
-        <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
+        <div className="border-t border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md p-4">
           <DMNarrationInput
             campaignId={campaignId}
             characters={characters.map(c => ({ id: c.id, name: c.name }))}
@@ -113,7 +113,7 @@ export default function DMConsolePage() {
       </div>
 
       {/* Right: DM tools panel */}
-      <div className="w-80 flex flex-col bg-white dark:bg-gray-900 overflow-hidden">
+      <div className="w-80 flex flex-col bg-white/80 dark:bg-gray-900/80 backdrop-blur-md overflow-hidden">
 
         {/* Panel tabs */}
         <div className="flex border-b border-gray-200 dark:border-gray-700">
@@ -123,7 +123,7 @@ export default function DMConsolePage() {
               onClick={() => setActivePanel(panel.id)}
               className={`flex-1 text-xs py-3 transition-colors ${
                 activePanel === panel.id
-                  ? 'text-purple-600 dark:text-purple-400 border-b-2 border-purple-500'
+                  ? 'text-emerald-600 dark:text-emerald-400 border-b-2 border-emerald-500'
                   : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >

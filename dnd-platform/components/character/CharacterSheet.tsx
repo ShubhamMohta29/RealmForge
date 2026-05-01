@@ -69,7 +69,7 @@ export function CharacterSheet({ character, onClose }: CharacterSheetProps) {
               onClick={() => setTab(t)}
               className={`px-4 py-3 text-sm capitalize border-b-2 transition-colors ${
                 tab === t
-                  ? 'border-purple-500 text-purple-600 dark:text-purple-400'
+                  ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
                   : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
               }`}
             >
@@ -124,7 +124,7 @@ export function CharacterSheet({ character, onClose }: CharacterSheetProps) {
                     const total = proficient ? base + character.proficiency_bonus : base
                     return (
                       <div key={ability} className="flex items-center gap-2 text-sm">
-                        <span className={`w-2 h-2 rounded-full ${proficient ? 'bg-purple-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
+                        <span className={`w-2 h-2 rounded-full ${proficient ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
                         <span className="text-gray-600 dark:text-gray-400 capitalize flex-1">{ability}</span>
                         <span className="font-medium text-gray-900 dark:text-gray-100">{total >= 0 ? '+' : ''}{total}</span>
                       </div>
@@ -145,7 +145,7 @@ export function CharacterSheet({ character, onClose }: CharacterSheetProps) {
                 const total = proficient ? base + character.proficiency_bonus : base
                 return (
                   <div key={name} className="flex items-center gap-3 py-1.5 px-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">
-                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${proficient ? 'bg-purple-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
+                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${proficient ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
                     <span className="flex-1 text-sm text-gray-700 dark:text-gray-300">{name}</span>
                     <span className="text-xs text-gray-400 uppercase">{ability}</span>
                     <span className="text-sm font-medium text-gray-900 dark:text-gray-100 w-8 text-right">

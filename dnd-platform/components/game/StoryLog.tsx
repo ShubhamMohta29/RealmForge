@@ -13,28 +13,32 @@ function MessageBubble({ message }: { message: Message }) {
 
     return (
       <div className="mb-4 animate-fadeIn">
-        <p className="text-gray-900 dark:text-gray-100 leading-relaxed text-base"
-           style={{ fontFamily: 'var(--font-serif, Georgia, serif)' }}>
-          {cleanContent}
-        </p>
+        <div className="bg-white/40 dark:bg-gray-900/40 backdrop-blur-md rounded-2xl rounded-tl-sm border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm max-w-5xl">
+          <p className="text-gray-900 dark:text-gray-100 leading-relaxed text-base"
+             style={{ fontFamily: 'var(--font-serif, Georgia, serif)' }}>
+            {cleanContent}
+          </p>
+        </div>
       </div>
     )
   }
 
   if (message.type === 'player_action') {
     return (
-      <div className="mb-3 pl-3 border-l-2 border-gray-300 dark:border-gray-600 animate-fadeIn">
-        <p className="text-sm text-gray-600 dark:text-gray-400 italic">
-          {message.content}
-        </p>
+      <div className="mb-3 animate-fadeIn flex justify-end">
+        <div className="bg-white/30 dark:bg-gray-800/40 backdrop-blur-md border border-gray-200/50 dark:border-gray-700/50 rounded-2xl rounded-tr-sm px-5 py-3 max-w-2xl shadow-sm text-right">
+          <p className="text-sm text-gray-800 dark:text-gray-200 italic font-medium">
+            "{message.content}"
+          </p>
+        </div>
       </div>
     )
   }
 
   if (message.type === 'dice_roll') {
     return (
-      <div className="mb-2 animate-fadeIn">
-        <p className="text-sm font-mono text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950 px-3 py-1.5 rounded-lg inline-block">
+      <div className="mb-2 animate-fadeIn flex justify-end">
+        <p className="text-sm font-mono text-emerald-800 dark:text-emerald-200 bg-emerald-100/40 dark:bg-emerald-950/40 backdrop-blur-md px-4 py-2 rounded-xl inline-block shadow-sm border border-emerald-200/50 dark:border-emerald-800/50">
           🎲 {message.content}
         </p>
       </div>
@@ -43,10 +47,10 @@ function MessageBubble({ message }: { message: Message }) {
 
   if (message.type === 'system') {
     return (
-      <div className="mb-2 animate-fadeIn">
-        <p className="text-xs text-gray-400 dark:text-gray-500 italic text-center">
+      <div className="mb-2 animate-fadeIn flex justify-center">
+        <span className="text-xs text-gray-500 dark:text-gray-400 italic bg-gray-100/50 dark:bg-gray-900/50 backdrop-blur-sm px-3 py-1 rounded-full">
           {message.content}
-        </p>
+        </span>
       </div>
     )
   }

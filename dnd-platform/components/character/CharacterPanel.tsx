@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/Badge'
 import { CharacterSheet } from './CharacterSheet'
 
 export function CharacterPanel() {
-  const { myCharacter } = useGameStore()
+  const { myCharacter, lastRollResult } = useGameStore()
   const [showSheet, setShowSheet] = useState(false)
 
   if (!myCharacter) return null
@@ -23,7 +23,7 @@ export function CharacterPanel() {
 
         {/* Character header */}
         <div>
-          <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center text-purple-700 dark:text-purple-300 font-bold text-lg mb-2">
+          <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center text-emerald-700 dark:text-emerald-300 font-bold text-lg mb-2">
             {myCharacter.name.charAt(0)}
           </div>
           <p className="font-medium text-gray-900 dark:text-gray-100">{myCharacter.name}</p>
@@ -100,10 +100,31 @@ export function CharacterPanel() {
           </div>
         </div>
 
+        {/* Inline Dice Result */}
+        {lastRollResult && (
+          <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 rounded-xl p-3 animate-fadeIn">
+            <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mb-2 uppercase tracking-wider">{lastRollResult.type} Roll</p>
+            <div className="flex items-center gap-3">
+              <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-xl font-bold shadow-sm ${lastRollResult.success ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-800 dark:text-emerald-300' : 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 border border-red-200 dark:border-red-800'}`}>
+                {lastRollResult.roll}
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-gray-900 dark:text-gray-100 flex items-baseline gap-1">
+                  Total: <strong className="text-lg">{lastRollResult.total}</strong>
+                </p>
+                {lastRollResult.dc && <p className="text-xs text-gray-500 dark:text-gray-400">vs DC {lastRollResult.dc}</p>}
+                <p className={`text-sm font-bold mt-0.5 ${lastRollResult.success ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
+                  {lastRollResult.success ? 'Success!' : 'Failure'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Full sheet button */}
         <button
           onClick={() => setShowSheet(true)}
-          className="text-xs text-purple-600 dark:text-purple-400 hover:underline text-left"
+          className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline text-left"
         >
           View full character sheet →
         </button>
