@@ -1,10 +1,8 @@
 'use client'
 import { useState } from 'react'
 import { MONSTERS } from '@/lib/dnd5e/monsters'
-import { supabase } from '@/lib/supabase'
-import { useGameStore } from '@/store/gameStore'
 
-type Tool = 'monsters' | 'notes' | 'xp' | 'map'
+type Tool = 'monsters' | 'notes' | 'xp'
 
 export interface DMToolboxProps {
   campaignId: string
@@ -18,10 +16,6 @@ export const DMToolbox = ({ campaignId, characters }: DMToolboxProps) => {
   const [notes, setNotes] = useState('')
   const [xpAmount, setXpAmount] = useState('')
   const [xpSent, setXpSent] = useState(false)
-  const [mapBg, setMapBg] = useState('')
-
-  const { campaign } = useGameStore()
-  const mapState = campaign?.world_state?.map
 
   const filteredMonsters = Object.keys(MONSTERS).filter(name =>
     name.toLowerCase().includes(monsterSearch.toLowerCase())
@@ -44,38 +38,9 @@ export const DMToolbox = ({ campaignId, characters }: DMToolboxProps) => {
     setXpSent(true)
     setTimeout(() => setXpSent(false), 2000)
   }
-  async function initMap() {
-    if (!campaign) return
-    const newWorldState = {
-      ...campaign.world_state,
-      map: { gridSize: 20, tokens: [], backgroundUrl: mapBg || undefined }
-    }
-    await supabase.from('campaigns').update({ world_state: newWorldState }).eq('id', campaign.id)
-  }
-
-  async function updateMapBg() {
-    if (!campaign || !mapState) return
-    const newWorldState = { ...campaign.world_state, map: { ...mapState, backgroundUrl: mapBg || undefined } }
-    await supabase.from('campaigns').update({ world_state: newWorldState }).eq('id', campaign.id)
-  }
-
-  async function clearMap() {
-    if (!campaign) return
-    const newWorldState = { ...campaign.world_state }
-    delete newWorldState.map
-    await supabase.from('campaigns').update({ world_state: newWorldState }).eq('id', campaign.id)
-  }
-
-  async function addToken(id: string, name: string, isPlayer: boolean, color: string) {
-    if (!campaign || !mapState) return
-    const newTokens = [...(mapState.tokens || []), { id: `${id}-${Date.now()}`, x: 0, y: 0, name, color, isPlayer }]
-    const newWorldState = { ...campaign.world_state, map: { ...mapState, tokens: newTokens } }
-    await supabase.from('campaigns').update({ world_state: newWorldState }).eq('id', campaign.id)
-  }
 
   const tools: { id: Tool; label: string }[] = [
     { id: 'monsters', label: 'Monsters' },
-    { id: 'map',      label: '🗺 Map' },
     { id: 'xp',       label: 'XP' },
     { id: 'notes',    label: 'Notes' },
   ]
@@ -179,93 +144,6 @@ export const DMToolbox = ({ campaignId, characters }: DMToolboxProps) => {
             className="w-full text-sm px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none resize-none"
           />
           <p className="text-xs text-gray-400 mt-1">Notes are saved locally only.</p>
-        </div>
-      )}
-
-      {activeTool === 'map' && (
-        <div className="space-y-4">
-          <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-2">Live Map Controls</p>
-          
-          {!mapState ? (
-            <div className="space-y-2">
-              <input
-                value={mapBg}
-                onChange={e => setMapBg(e.target.value)}
-                placeholder="Background Map Image URL (optional)"
-                className="w-full text-sm px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-              />
-              <button
-                onClick={initMap}
-                className="w-full px-3 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-sm"
-              >
-                Initialize Map Grid
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex gap-2">
-                <input
-                  value={mapBg}
-                  onChange={e => setMapBg(e.target.value)}
-                  placeholder="Update bg URL..."
-                  className="flex-1 text-sm px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none"
-                />
-                <button
-                  onClick={updateMapBg}
-                  className="px-3 py-2 text-sm bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:brightness-95 transition-colors"
-                >
-                  Set
-                </button>
-              </div>
-
-              <div>
-                <p className="text-xs text-gray-400 mb-2">Add Player Tokens</p>
-                <div className="flex flex-wrap gap-2">
-                  {characters.map(c => (
-                    <button
-                      key={c.id}
-                      onClick={() => addToken(c.id, c.name, true, '#10b981')}
-                      className="text-xs px-3 py-1.5 rounded bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-800/60 border border-emerald-200 dark:border-emerald-800/50 transition-colors"
-                    >
-                      + {c.name.split(' ')[0]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <p className="text-xs text-gray-400 mb-2">Add Monster Tokens</p>
-                <div className="flex gap-2">
-                  <select
-                    onChange={e => setSelectedMonster(e.target.value)}
-                    value={selectedMonster}
-                    className="flex-1 text-sm px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none"
-                  >
-                    <option value="">Select monster...</option>
-                    {Object.keys(MONSTERS).map(name => (
-                      <option key={name} value={name}>{name}</option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={() => selectedMonster && addToken(selectedMonster, selectedMonster, false, '#ef4444')}
-                    className="px-3 py-1.5 text-xs bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 rounded hover:bg-red-200 dark:hover:bg-red-800/60 border border-red-200 dark:border-red-800/50 transition-colors disabled:opacity-50"
-                    disabled={!selectedMonster}
-                  >
-                    Add
-                  </button>
-                </div>
-              </div>
-
-              <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-                <button
-                  onClick={clearMap}
-                  className="w-full px-3 py-2 text-sm border border-red-200 dark:border-red-800/50 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                >
-                  Destroy Map & Clear Tokens
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>

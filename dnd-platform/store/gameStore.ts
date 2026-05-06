@@ -1,25 +1,73 @@
-/**
- * Backward-compatibility barrel.
- * Existing components importing from '@/store/gameStore' continue to work unchanged.
- * Prefer importing from the specific stores directly in new code:
- *   - '@/store/campaignStore'  — campaign, characters, messages
- *   - '@/store/combatStore'    — encounter state
- *   - '@/store/uiStore'        — loading flags, dice roll UI
- */
-export { useCampaignStore } from './campaignStore'
-export { useCombatStore }   from './combatStore'
-export { useUIStore }       from './uiStore'
-export type { RollRequest } from './uiStore'
+import { create } from 'zustand'
+import type { Campaign } from '@/types/campaign'
+import type { Character } from '@/types/character'
+import type { Message } from '@/types/message'
+import type { CombatEncounter } from '@/types/combat'
 
-// Convenience hook that merges all three stores — matches the old useGameStore API.
-// Components already using useGameStore() will continue to work.
-import { useCampaignStore } from './campaignStore'
-import { useCombatStore }   from './combatStore'
-import { useUIStore }       from './uiStore'
+interface GameStore {
+  campaign: Campaign | null
+  characters: Character[]
+  myCharacter: Character | null
+  messages: Message[]
+  encounter: CombatEncounter | null
+  isLoading: boolean
+  isDMThinking: boolean
+  pendingRollRequest: RollRequest | null
+  isRollModalOpen: boolean
+  lastRollResult: { roll: number, total: number, dc?: number, success: boolean, type: string } | null
 
-export function useGameStore() {
-  const campaign  = useCampaignStore()
-  const combat    = useCombatStore()
-  const ui        = useUIStore()
-  return { ...campaign, ...combat, ...ui }
-}
+  setCampaign: (campaign: Campaign) => void
+  setCharacters: (characters: Character[]) => void
+  setMyCharacter: (character: Character) => void
+  addMessage: (message: Message) => void
+  setMessages: (messages: Message[]) => void
+  setEncounter: (encounter: CombatEncounter | null) => void
+  updateCharacterHp: (characterId: string, hp: number) => void
+  setLoading: (loading: boolean) => void
+  setDMThinking: (thinking: boolean) => void
+  setPendingRollRequest: (roll: RollRequest | null) => void
+  setRollModalOpen: (open: boolean) => void
+  setLastRollResult: (result: { roll: number, total: number, dc?: number, success: boolean, type: string } | null) => void
+}
+
+export interface RollRequest {
+  character: string
+  type: 'skill' | 'saving_throw' | 'attack' | 'ability'
+  skill?: string
+  ability?: string
+  dc?: number
+  target?: string
+}
+
+export const useGameStore = create<GameStore>((set) => ({
+  campaign: null,
+  characters: [],
+  myCharacter: null,
+  messages: [],
+  encounter: null,
+  isLoading: false,
+  isDMThinking: false,
+  pendingRollRequest: null,
+  isRollModalOpen: false,
+  lastRollResult: null,
+
+  setCampaign: (campaign) => set({ campaign }),
+  setCharacters: (characters) => set({ characters }),
+  setMyCharacter: (character) => set({ myCharacter: character }),
+  addMessage: (message) => set((state) => ({
+    messages: [...state.messages, message]
+  })),
+  setMessages: (messages) => set({ messages }),
+  setEncounter: (encounter) => set({ encounter }),
+  updateCharacterHp: (characterId, hp) => set((state) => ({
+    characters: state.characters.map(c => c.id === characterId ? { ...c, hp } : c),
+    myCharacter: state.myCharacter?.id === characterId
+      ? { ...state.myCharacter, hp }
+      : state.myCharacter
+  })),
+  setLoading: (isLoading) => set({ isLoading }),
+  setDMThinking: (isDMThinking) => set({ isDMThinking }),
+  setPendingRollRequest: (pendingRollRequest) => set({ pendingRollRequest }),
+  setRollModalOpen: (isRollModalOpen) => set({ isRollModalOpen }),
+  setLastRollResult: (lastRollResult) => set({ lastRollResult })
+}))

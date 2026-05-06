@@ -29,18 +29,14 @@ export default function DashboardPage() {
         .select('campaign_id')
         .eq('user_id', user.id)
 
-      const memberIds = members?.map(m => m.campaign_id) || []
-      
-      let query = supabase.from('campaigns').select('*')
-      
-      if (memberIds.length > 0) {
-        query = query.or(`id.in.(${memberIds.join(',')}),dm_user_id.eq.${user.id}`)
-      } else {
-        query = query.eq('dm_user_id', user.id)
+      if (members && members.length > 0) {
+        const ids = members.map(m => m.campaign_id)
+        const { data } = await supabase
+          .from('campaigns')
+          .select('*')
+          .in('id', ids)
+        setCampaigns(data || [])
       }
-
-      const { data } = await query
-      setCampaigns(data || [])
       setLoading(false)
     }
     load()
@@ -154,12 +150,6 @@ export default function DashboardPage() {
           DM Console
         </button>
       )}
-      <button
-        onClick={() => router.push(`/campaign/${campaign.id}/sessions`)}
-        className="text-xs px-3 py-1.5 border border-amber-200 dark:border-amber-900/50 text-amber-600 dark:text-amber-500 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors flex items-center justify-center gap-1"
-      >
-        <span>📜</span> Logs
-      </button>
     </div>
   </div>
 ))}

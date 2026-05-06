@@ -2,8 +2,6 @@
 import { useState } from 'react'
 import type { Character } from '@/types/character'
 import { Button } from '@/components/ui/Button'
-import { useGameStore } from '@/store/gameStore'
-import { supabase } from '@/lib/supabase'
 
 const SKILLS = [
   { name: 'Acrobatics', ability: 'dex' },
@@ -38,7 +36,6 @@ interface CharacterSheetProps {
 
 export function CharacterSheet({ character, onClose }: CharacterSheetProps) {
   const [tab, setTab] = useState<'core' | 'skills' | 'spells' | 'inventory' | 'features'>('core')
-  const { updateCharacter } = useGameStore()
 
   const tabs = ['core', 'skills', 'spells', 'inventory', 'features'] as const
 
@@ -165,79 +162,22 @@ export function CharacterSheet({ character, onClose }: CharacterSheetProps) {
               {character.spells.known.length === 0 ? (
                 <p className="text-sm text-gray-400 text-center mt-8">No spells known.</p>
               ) : (
-                <div className="space-y-6">
-                  {/* Spell Slots */}
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wide">Spell Slots</h3>
-                    <div className="grid grid-cols-4 gap-3">
-                      {Object.entries(character.spells.slot_max).map(([level, max]) => {
-                        const available = character.spells.slots[level] || 0
-                        return (
-                          <div key={level} className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 text-center">
-                            <p className="text-xs text-gray-400 font-medium mb-2 uppercase">Level {level}</p>
-                            <div className="flex flex-wrap gap-1.5 justify-center">
-                              {Array.from({ length: max }).map((_, i) => (
-                                <button
-                                  key={i}
-                                  onClick={() => {
-                                    const newSlots = { ...character.spells.slots }
-                                    // Clicking a filled dot consumes it, clicking empty restores it
-                                    newSlots[level] = i < available ? available - 1 : available + 1
-                                    
-                                    const updatedSpells = { ...character.spells, slots: newSlots }
-                                    updateCharacter(character.id, { spells: updatedSpells })
-                                    supabase.from('characters').update({ spells: updatedSpells }).eq('id', character.id)
-                                  }}
-                                  className={`w-4 h-4 rounded-full border-2 transition-colors ${
-                                    i < available 
-                                      ? 'bg-emerald-500 border-emerald-600 dark:border-emerald-400 shadow-sm' 
-                                      : 'bg-transparent border-gray-300 dark:border-gray-600'
-                                  }`}
-                                  title={i < available ? 'Consume spell slot' : 'Restore spell slot'}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-4 gap-2 mb-4">
+                    {Object.entries(character.spells.slot_max).map(([level, max]) => (
+                      <div key={level} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 text-center">
+                        <p className="text-xs text-gray-400">Level {level}</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100">
+                          {character.spells.slots[level] || 0}/{max}
+                        </p>
+                      </div>
+                    ))}
                   </div>
-
-                  {/* Spells List */}
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wide flex justify-between">
-                      <span>Known Spells</span>
-                      <span className="text-xs normal-case font-normal">Click star to prepare</span>
-                    </h3>
-                    <div className="bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-700">
-                      {character.spells.known.map((spell, idx) => {
-                        const isPrepared = character.spells.prepared?.includes(spell)
-                        return (
-                          <div key={spell} className={`flex items-center gap-3 py-3 px-4 ${idx !== character.spells.known.length - 1 ? 'border-b border-gray-200 dark:border-gray-700' : ''}`}>
-                            <button
-                              onClick={() => {
-                                const prepared = character.spells.prepared || []
-                                const newPrepared = isPrepared 
-                                  ? prepared.filter(s => s !== spell)
-                                  : [...prepared, spell]
-                                
-                                const updatedSpells = { ...character.spells, prepared: newPrepared }
-                                updateCharacter(character.id, { spells: updatedSpells })
-                                supabase.from('characters').update({ spells: updatedSpells }).eq('id', character.id)
-                              }}
-                              className={`text-lg transition-colors ${isPrepared ? 'text-amber-500 hover:text-amber-600' : 'text-gray-300 dark:text-gray-600 hover:text-gray-400'}`}
-                              title={isPrepared ? "Unprepare spell" : "Prepare spell"}
-                            >
-                              {isPrepared ? '★' : '☆'}
-                            </button>
-                            <span className={`text-sm flex-1 ${isPrepared ? 'text-gray-900 dark:text-gray-100 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
-                              {spell}
-                            </span>
-                          </div>
-                        )
-                      })}
+                  {character.spells.known.map(spell => (
+                    <div key={spell} className="text-sm text-gray-700 dark:text-gray-300 py-1 border-b border-gray-100 dark:border-gray-800">
+                      {spell}
                     </div>
-                  </div>
+                  ))}
                 </div>
               )}
             </div>

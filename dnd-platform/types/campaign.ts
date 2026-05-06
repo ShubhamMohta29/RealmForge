@@ -16,23 +16,6 @@ export interface Campaign {
   updated_at: string
 }
 
-export interface MapToken {
-  id: string
-  x: number
-  y: number
-  name: string
-  color: string
-  imageUrl?: string
-  isPlayer?: boolean
-}
-
-export interface MapState {
-  gridSize: number // e.g., 20 means 20x20
-  tokens: MapToken[]
-  backgroundUrl?: string
-  fog?: string[] // "x,y" of hidden/revealed cells
-}
-
 export interface WorldState {
   calendar?: { day: number; month: string; year: number }
   location?: { region: string; area: string; specific: string }
@@ -41,7 +24,6 @@ export interface WorldState {
   secrets?: string[]
   weather?: string
   economy?: { gold_party_total: number; current_shop: string | null }
-  map?: MapState
 }
 
 export interface CampaignMember {
