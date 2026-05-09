@@ -79,16 +79,16 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-8">
+    <div className="min-h-screen p-8">
       <div className="max-w-3xl mx-auto">
 
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <h1 className="text-2xl font-bold text-white">
               Your Campaigns
             </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-sm text-gray-300 mt-1">
               Pick up where you left off or start a new adventure
             </p>
           </div>
@@ -102,7 +102,7 @@ export default function DashboardPage() {
 
         {/* Campaign list */}
         {campaigns.length === 0 ? (
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-12 text-center mb-6">
+          <div className="glass rounded-2xl p-12 text-center mb-6">
             <p className="text-4xl mb-4">⚔️</p>
             <p className="text-gray-500 dark:text-gray-400 mb-2">No campaigns yet</p>
             <p className="text-sm text-gray-400">Create one or join with an invite code</p>
@@ -112,20 +112,20 @@ export default function DashboardPage() {
             {campaigns.map(campaign => (
   <div
     key={campaign.id}
-    className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 flex items-center justify-between hover:border-purple-300 dark:hover:border-purple-700 transition-colors"
+    className="glass rounded-2xl p-6 flex items-center justify-between hover:border-amber-main transition-colors"
   >
     <div
       className="flex-1 cursor-pointer"
       onClick={() => router.push(`/campaign/${campaign.id}/play`)}
     >
       <div className="flex items-center gap-2 mb-1">
-        <h2 className="font-semibold text-gray-900 dark:text-gray-100">
+        <h2 className="font-semibold text-white">
           {campaign.name}
         </h2>
         <span className={`text-xs px-2 py-0.5 rounded-full ${
           campaign.dm_mode === 'ai'
-            ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300'
-            : 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300'
+            ? 'bg-amber-main/20 text-amber-highlight border border-amber-main/30'
+            : 'bg-teal-500/20 text-teal-300 border border-teal-500/30'
         }`}>
           {campaign.dm_mode === 'ai' ? 'AI DM' : 'Human DM'}
         </span>
@@ -138,7 +138,7 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-2 ml-4">
       <button
         onClick={() => router.push(`/campaign/${campaign.id}/play`)}
-        className="text-xs px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+        className="text-xs px-3 py-1.5 btn-amber rounded-lg transition-colors"
       >
         Play →
       </button>
@@ -160,20 +160,20 @@ export default function DashboardPage() {
         <div className="grid grid-cols-2 gap-4">
           <button
             onClick={() => router.push('/create-campaign')}
-            className="bg-purple-600 hover:bg-purple-700 text-white rounded-2xl p-6 text-left transition-colors"
+            className="btn-amber rounded-2xl p-6 text-left transition-colors"
           >
             <p className="text-2xl mb-2">+</p>
             <p className="font-semibold">New campaign</p>
-            <p className="text-sm text-purple-200 mt-1">Start a fresh adventure</p>
+            <p className="text-sm text-amber-highlight/80 mt-1">Start a fresh adventure</p>
           </button>
 
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
-            <p className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Join campaign</p>
+          <div className="glass rounded-2xl p-6">
+            <p className="font-semibold text-white mb-3">Join campaign</p>
             <input
               value={joinCode}
               onChange={e => setJoinCode(e.target.value)}
               placeholder="Invite code"
-              className="w-full text-sm px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 mb-2 focus:outline-none focus:border-purple-400"
+              className="w-full text-sm px-3 py-2 border border-white/10 rounded-lg bg-white/5 dark:bg-black/20 text-white mb-2 focus:outline-none focus:border-amber-highlight"
             />
             <button
               onClick={handleJoin}

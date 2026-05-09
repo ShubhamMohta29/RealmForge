@@ -27,12 +27,12 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-8">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-8 w-full max-w-sm">
+    <div className="min-h-screen flex items-center justify-center p-8">
+      <div className="glass rounded-2xl p-8 w-full max-w-sm">
         <div className="text-center mb-8">
           <p className="text-4xl mb-2">⚔️</p>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Welcome back</h1>
-          <p className="text-sm text-gray-400 mt-1">Sign in to continue your adventure</p>
+          <h1 className="text-2xl font-bold text-white">Welcome back</h1>
+          <p className="text-sm text-gray-300 mt-1">Sign in to continue your adventure</p>
         </div>
 
         <div className="space-y-3 mb-4">
@@ -42,7 +42,7 @@ export default function LoginPage() {
             onKeyDown={handleKeyDown}
             placeholder="Email"
             type="email"
-            className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-purple-400"
+            className="w-full px-4 py-2.5 border border-white/10 rounded-xl bg-white/5 dark:bg-black/20 text-white placeholder:text-gray-500 focus:outline-none focus:border-amber-highlight"
           />
           <input
             value={password}
@@ -50,7 +50,7 @@ export default function LoginPage() {
             onKeyDown={handleKeyDown}
             placeholder="Password"
             type="password"
-            className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-purple-400"
+            className="w-full px-4 py-2.5 border border-white/10 rounded-xl bg-white/5 dark:bg-black/20 text-white placeholder:text-gray-500 focus:outline-none focus:border-amber-highlight"
           />
         </div>
 
@@ -59,14 +59,14 @@ export default function LoginPage() {
         <button
           onClick={handleLogin}
           disabled={loading || !email || !password}
-          className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-medium rounded-xl py-3 transition-colors mb-3"
+          className="w-full btn-amber disabled:opacity-50 font-medium rounded-xl py-3 transition-colors mb-3"
         >
           {loading ? 'Signing in...' : 'Sign in'}
         </button>
 
         <p className="text-sm text-center text-gray-400">
           No account?{' '}
-          <a href="/register" className="text-purple-600 hover:underline">Create one</a>
+          <a href="/register" className="text-amber-highlight hover:underline">Create one</a>
         </p>
       </div>
     </div>

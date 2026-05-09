@@ -10,12 +10,12 @@ export function InitiativeTracker() {
   const current = encounter.turn_order[encounter.current_turn_index]
 
   return (
-    <div className="border-b border-gray-200 dark:border-gray-700 bg-amber-50 dark:bg-amber-950/30 px-4 py-3">
+    <div className="border-b border-white/10 glass px-4 py-3">
       <div className="flex items-center gap-2 mb-2">
-        <span className="text-xs font-medium text-amber-700 dark:text-amber-400 uppercase tracking-wide">
+        <span className="text-xs font-medium text-amber-400 uppercase tracking-wide">
           ⚔️ Combat · Round {encounter.round}
         </span>
-        <span className="text-xs text-amber-600 dark:text-amber-500">
+        <span className="text-xs text-amber-500">
           · {current?.name}&apos;s turn
         </span>
       </div>
@@ -30,17 +30,17 @@ export function InitiativeTracker() {
               key={combatant.id}
               className={`flex-shrink-0 rounded-lg p-2 min-w-[100px] border transition-all ${
                 isActive
-                  ? 'border-amber-400 bg-amber-100 dark:bg-amber-900/50'
+                  ? 'border-amber-500 bg-amber-500/20'
                   : isDead
-                    ? 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 opacity-40'
-                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
+                    ? 'border-white/5 bg-white/5 opacity-40'
+                    : 'border-white/10 glass'
               }`}
             >
               <div className="flex items-center justify-between mb-1">
                 <span className={`text-xs font-medium truncate ${
                   combatant.type === 'monster'
                     ? 'text-red-600 dark:text-red-400'
-                    : 'text-purple-600 dark:text-purple-400'
+                    : 'text-amber-highlight'
                 }`}>
                   {combatant.name}
                 </span>

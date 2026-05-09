@@ -1,14 +1,14 @@
 interface BadgeProps {
   children: React.ReactNode
-  color?: 'purple' | 'teal' | 'red' | 'amber' | 'gray' | 'green'
+  color?: 'gold' | 'teal' | 'red' | 'amber' | 'gray' | 'green'
 }
 
 export function Badge({ children, color = 'gray' }: BadgeProps) {
   const colors = {
-    purple: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+    gold:   'bg-amber-main/20 text-amber-highlight border border-amber-main/30',
     teal:   'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200',
     red:    'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-    amber:  'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
+    amber:  'bg-amber-main/20 text-amber-highlight border border-amber-main/30',
     gray:   'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
     green:  'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
   }

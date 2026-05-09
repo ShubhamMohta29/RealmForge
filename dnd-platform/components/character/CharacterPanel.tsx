@@ -11,22 +11,22 @@ export function CharacterPanel() {
 
   if (!myCharacter) return null
 
-  const conditionColors: Record<string, 'red' | 'amber' | 'purple' | 'gray'> = {
+  const conditionColors: Record<string, 'red' | 'amber' | 'gold' | 'gray'> = {
     poisoned: 'red', unconscious: 'red', paralyzed: 'red',
     frightened: 'amber', stunned: 'amber', restrained: 'amber',
-    invisible: 'purple', charmed: 'purple',
+    invisible: 'gold', charmed: 'gold',
   }
 
   return (
     <>
-      <div className="w-64 border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 flex flex-col gap-4 overflow-y-auto">
+      <div className="w-64 border-l border-white/10 glass p-4 flex flex-col gap-4 overflow-y-auto">
 
         {/* Character header */}
         <div>
-          <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center text-purple-700 dark:text-purple-300 font-bold text-lg mb-2">
+          <div className="w-12 h-12 rounded-full bg-amber-main/20 flex items-center justify-center text-amber-highlight font-bold text-lg mb-2">
             {myCharacter.name.charAt(0)}
           </div>
-          <p className="font-medium text-gray-900 dark:text-gray-100">{myCharacter.name}</p>
+          <p className="font-medium text-white">{myCharacter.name}</p>
           <p className="text-xs text-gray-500 dark:text-gray-400">
             {myCharacter.race} {myCharacter.class} · Level {myCharacter.level}
           </p>
@@ -51,9 +51,9 @@ export function CharacterPanel() {
             { label: 'Speed', value: `${myCharacter.speed}ft` },
             { label: 'Prof',  value: `+${myCharacter.proficiency_bonus}` },
           ].map(({ label, value }) => (
-            <div key={label} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 text-center">
-              <p className="text-xs text-gray-400 dark:text-gray-500">{label}</p>
-              <p className="font-medium text-gray-900 dark:text-gray-100 text-sm">{value}</p>
+            <div key={label} className="bg-white/5 dark:bg-black/20 rounded-lg p-2 text-center">
+              <p className="text-xs text-gray-400">{label}</p>
+              <p className="font-medium text-white text-sm">{value}</p>
             </div>
           ))}
         </div>
@@ -90,10 +90,10 @@ export function CharacterPanel() {
             {Object.entries(myCharacter.ability_scores).map(([ability, score]) => {
               const mod = Math.floor((score - 10) / 2)
               return (
-                <div key={ability} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-1.5 text-center">
+                <div key={ability} className="bg-white/5 dark:bg-black/20 rounded-lg p-1.5 text-center">
                   <p className="text-xs text-gray-400 uppercase">{ability}</p>
-                  <p className="font-medium text-gray-900 dark:text-gray-100 text-sm">{score}</p>
-                  <p className="text-xs text-gray-500">{mod >= 0 ? '+' : ''}{mod}</p>
+                  <p className="font-medium text-white text-sm">{score}</p>
+                  <p className="text-xs text-gray-400">{mod >= 0 ? '+' : ''}{mod}</p>
                 </div>
               )
             })}
@@ -103,7 +103,7 @@ export function CharacterPanel() {
         {/* Full sheet button */}
         <button
           onClick={() => setShowSheet(true)}
-          className="text-xs text-purple-600 dark:text-purple-400 hover:underline text-left"
+          className="text-xs text-amber-highlight hover:underline text-left"
         >
           View full character sheet →
         </button>

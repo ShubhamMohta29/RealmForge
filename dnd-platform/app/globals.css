@@ -3,11 +3,17 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --amber-main: #B58B4C;
+  --amber-highlight: #E2C086;
+  --amber-shadow: #5C3D1E;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-amber-main: var(--amber-main);
+  --color-amber-highlight: var(--amber-highlight);
+  --color-amber-shadow: var(--amber-shadow);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -20,7 +26,50 @@
 }
 
 body {
-  background: var(--background);
+  background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url('/dnd-background.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark .glass {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.btn-amber {
+  background: linear-gradient(to bottom, var(--amber-highlight) 0%, var(--amber-main) 10%, var(--amber-main) 90%, var(--amber-shadow) 100%);
+  color: #2D1B0A;
+  border: 1px solid var(--amber-shadow);
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    0 0 15px rgba(255, 100, 0, 0.15);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: all 0.2s ease;
+}
+
+.btn-amber:hover {
+  filter: brightness(1.1);
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 4px 8px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(255, 100, 0, 0.25);
+  transform: translateY(-1px);
+}
+
+.btn-amber:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
 }

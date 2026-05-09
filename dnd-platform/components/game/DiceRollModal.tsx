@@ -42,12 +42,12 @@ export function DiceRollModal({ onRollComplete }: DiceRollModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 w-full max-w-sm text-center">
+    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+      <div className="glass rounded-2xl p-8 w-full max-w-sm text-center">
         <p className="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
           {pendingRollRequest.type.replace('_', ' ')}
         </p>
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-1">
+        <h2 className="text-xl font-semibold text-white mb-1">
           {pendingRollRequest.skill || pendingRollRequest.ability || 'Roll'}
         </h2>
         {pendingRollRequest.dc && (
@@ -58,7 +58,7 @@ export function DiceRollModal({ onRollComplete }: DiceRollModalProps) {
           <button
             onClick={handleRoll}
             disabled={rolling}
-            className="w-24 h-24 rounded-2xl bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 text-4xl mx-auto flex items-center justify-center hover:bg-purple-200 dark:hover:bg-purple-800 transition-colors disabled:animate-pulse"
+            className="w-24 h-24 rounded-2xl bg-amber-main/20 text-amber-highlight text-4xl mx-auto flex items-center justify-center hover:bg-amber-main/30 transition-colors disabled:animate-pulse border border-amber-main/30"
           >
             🎲
           </button>
@@ -66,13 +66,13 @@ export function DiceRollModal({ onRollComplete }: DiceRollModalProps) {
           <div className="space-y-4">
             <div className={`w-24 h-24 rounded-2xl mx-auto flex items-center justify-center text-4xl font-bold ${
               result.success
-                ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
-                : 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
+                ? 'bg-green-500/20 text-green-300'
+                : 'bg-red-500/20 text-red-300'
             }`}>
               {result.roll}
             </div>
-            <p className="text-sm text-gray-500">
-              Roll {result.roll} + modifier = <strong>{result.total}</strong>
+            <p className="text-sm text-gray-300">
+              Roll {result.roll} + modifier = <strong className="text-white">{result.total}</strong>
               {pendingRollRequest.dc && ` vs DC ${pendingRollRequest.dc}`}
             </p>
             <p className={`text-lg font-bold ${result.success ? 'text-green-600' : 'text-red-600'}`}>

@@ -54,7 +54,7 @@ export const DMToolbox = ({ campaignId, characters }: DMToolboxProps) => {
             onClick={() => setActiveTool(tool.id)}
             className={`flex-1 text-xs py-1.5 rounded-lg border transition-colors ${
               activeTool === tool.id
-                ? 'border-purple-400 bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300'
+                ? 'border-amber-highlight bg-amber-main/20 text-amber-highlight'
                 : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
             }`}
           >

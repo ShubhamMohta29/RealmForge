@@ -32,30 +32,30 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-8">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-8 w-full max-w-sm">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">Create account</h1>
+    <div className="min-h-screen flex items-center justify-center p-8">
+      <div className="glass rounded-2xl p-8 w-full max-w-sm">
+        <h1 className="text-2xl font-bold text-white mb-6">Create account</h1>
 
         <div className="space-y-3 mb-4">
           <input
             value={name}
             onChange={e => setName(e.target.value)}
             placeholder="Your name"
-            className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-purple-400"
+            className="w-full px-4 py-2.5 border border-white/10 rounded-xl bg-white/5 dark:bg-black/20 text-white placeholder:text-gray-500 focus:outline-none focus:border-amber-highlight"
           />
           <input
             value={email}
             onChange={e => setEmail(e.target.value)}
             placeholder="Email"
             type="email"
-            className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-purple-400"
+            className="w-full px-4 py-2.5 border border-white/10 rounded-xl bg-white/5 dark:bg-black/20 text-white placeholder:text-gray-500 focus:outline-none focus:border-amber-highlight"
           />
           <input
             value={password}
             onChange={e => setPassword(e.target.value)}
             placeholder="Password"
             type="password"
-            className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-purple-400"
+            className="w-full px-4 py-2.5 border border-white/10 rounded-xl bg-white/5 dark:bg-black/20 text-white placeholder:text-gray-500 focus:outline-none focus:border-amber-highlight"
           />
         </div>
 
@@ -64,14 +64,14 @@ export default function RegisterPage() {
         <button
           onClick={handleRegister}
           disabled={loading || !email || !password || !name}
-          className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-medium rounded-xl py-3 transition-colors mb-3"
+          className="w-full btn-amber disabled:opacity-50 font-medium rounded-xl py-3 transition-colors mb-3"
         >
           {loading ? 'Creating...' : 'Create account'}
         </button>
 
         <p className="text-sm text-center text-gray-400">
           Already have an account?{' '}
-          <a href="/login" className="text-purple-600 hover:underline">Sign in</a>
+          <a href="/login" className="text-amber-highlight hover:underline">Sign in</a>
         </p>
       </div>
     </div>

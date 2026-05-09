@@ -83,13 +83,13 @@ export default function DMConsolePage() {
   ]
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="flex h-screen">
 
       {/* Left: story log + narration input (what players see) */}
-      <div className="flex flex-col flex-1 min-w-0 border-r border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+      <div className="flex flex-col flex-1 min-w-0 border-r border-white/10">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 glass">
           <div>
-            <p className="font-medium text-gray-900 dark:text-gray-100 text-sm">
+            <p className="font-medium text-white text-sm">
               {campaign?.name || 'Campaign'}
             </p>
             <p className="text-xs text-gray-400">DM Console · Players see this log</p>
@@ -104,7 +104,7 @@ export default function DMConsolePage() {
 
         <StoryLog />
 
-        <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
+        <div className="border-t border-white/10 glass p-4">
           <DMNarrationInput
             campaignId={campaignId}
             characters={characters.map(c => ({ id: c.id, name: c.name }))}
@@ -113,17 +113,17 @@ export default function DMConsolePage() {
       </div>
 
       {/* Right: DM tools panel */}
-      <div className="w-80 flex flex-col bg-white dark:bg-gray-900 overflow-hidden">
+      <div className="w-80 flex flex-col glass overflow-hidden">
 
         {/* Panel tabs */}
-        <div className="flex border-b border-gray-200 dark:border-gray-700">
+        <div className="flex border-b border-white/10">
           {panels.map(panel => (
             <button
               key={panel.id}
               onClick={() => setActivePanel(panel.id)}
               className={`flex-1 text-xs py-3 transition-colors ${
                 activePanel === panel.id
-                  ? 'text-purple-600 dark:text-purple-400 border-b-2 border-purple-500'
+                  ? 'text-amber-highlight border-b-2 border-amber-main'
                   : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >

@@ -13,7 +13,7 @@ function MessageBubble({ message }: { message: Message }) {
 
     return (
       <div className="mb-4 animate-fadeIn">
-        <p className="text-gray-900 dark:text-gray-100 leading-relaxed text-base"
+        <p className="text-white leading-relaxed text-base"
            style={{ fontFamily: 'var(--font-serif, Georgia, serif)' }}>
           {cleanContent}
         </p>
@@ -24,7 +24,7 @@ function MessageBubble({ message }: { message: Message }) {
   if (message.type === 'player_action') {
     return (
       <div className="mb-3 pl-3 border-l-2 border-gray-300 dark:border-gray-600 animate-fadeIn">
-        <p className="text-sm text-gray-600 dark:text-gray-400 italic">
+        <p className="text-sm text-gray-300 italic">
           {message.content}
         </p>
       </div>
@@ -34,7 +34,7 @@ function MessageBubble({ message }: { message: Message }) {
   if (message.type === 'dice_roll') {
     return (
       <div className="mb-2 animate-fadeIn">
-        <p className="text-sm font-mono text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950 px-3 py-1.5 rounded-lg inline-block">
+        <p className="text-sm font-mono text-amber-highlight bg-amber-main/20 px-3 py-1.5 rounded-lg inline-block border border-amber-main/30">
           🎲 {message.content}
         </p>
       </div>
