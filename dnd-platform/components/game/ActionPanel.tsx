@@ -37,15 +37,15 @@ export function ActionPanel({ onAction }: ActionPanelProps) {
   }
 
   return (
-    <div className="border-t border-white/10 glass p-4">
+    <div className="p-6 bg-gradient-to-t from-black/60 to-transparent">
       {/* Quick actions */}
-      <div className="flex flex-wrap gap-2 mb-3">
+      <div className="flex flex-wrap gap-2.5 mb-5 justify-center">
         {QUICK_ACTIONS.map(({ label, action }) => (
           <button
             key={label}
             onClick={() => onAction(action)}
             disabled={isDMThinking}
-            className="text-xs px-3 py-1.5 rounded-lg border border-white/10 text-gray-300 hover:bg-white/5 disabled:opacity-40 transition-colors"
+            className="text-[11px] font-bold uppercase tracking-wider px-4 py-2 rounded-xl border border-white/10 bg-white/5 text-gray-400 hover:bg-white/10 hover:border-white/20 hover:text-white disabled:opacity-40 transition-all shadow-lg active:scale-95"
           >
             {label}
           </button>
@@ -53,22 +53,27 @@ export function ActionPanel({ onAction }: ActionPanelProps) {
       </div>
 
       {/* Text input */}
-      <div className="flex gap-2">
-        <input
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={isDMThinking}
-          placeholder={isDMThinking ? 'The DM is responding...' : 'What do you do?'}
-          className="flex-1 px-3 py-2 text-sm border border-white/10 rounded-lg bg-white/5 dark:bg-black/20 text-white placeholder-gray-500 focus:outline-none focus:border-amber-highlight disabled:opacity-50"
-        />
-        <Button
-          onClick={handleSend}
-          disabled={isDMThinking || !input.trim()}
-          variant="primary"
-        >
-          Send
-        </Button>
+      <div className="max-w-4xl mx-auto">
+        <div className="relative group">
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-amber-main/20 border border-amber-main/30 flex items-center justify-center text-amber-highlight font-bold text-xs">
+            {myCharacter?.name?.charAt(0) || 'N'}
+          </div>
+          <input
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={isDMThinking}
+            placeholder={isDMThinking ? 'The DM is considering your fate...' : 'What do you do next?'}
+            className="w-full pl-14 pr-24 py-4 rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl text-white placeholder-gray-500 focus:outline-none focus:border-amber-highlight/50 transition-all shadow-2xl"
+          />
+          <button
+            onClick={handleSend}
+            disabled={isDMThinking || !input.trim()}
+            className="absolute right-2 top-1/2 -translate-y-1/2 btn-amber px-6 py-2 rounded-xl text-sm font-bold disabled:opacity-50 transition-all shadow-lg active:scale-95"
+          >
+            Send
+          </button>
+        </div>
       </div>
     </div>
   )

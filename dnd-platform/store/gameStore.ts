@@ -20,7 +20,7 @@ interface GameStore {
   addMessage: (message: Message) => void
   setMessages: (messages: Message[]) => void
   setEncounter: (encounter: CombatEncounter | null) => void
-  updateCharacterHp: (characterId: string, hp: number) => void
+  updateCharacter: (characterId: string, updates: Partial<Character>) => void
   setLoading: (loading: boolean) => void
   setDMThinking: (thinking: boolean) => void
   setPendingRollRequest: (roll: RollRequest | null) => void
@@ -53,10 +53,10 @@ export const useGameStore = create<GameStore>((set) => ({
   })),
   setMessages: (messages) => set({ messages }),
   setEncounter: (encounter) => set({ encounter }),
-  updateCharacterHp: (characterId, hp) => set((state) => ({
-    characters: state.characters.map(c => c.id === characterId ? { ...c, hp } : c),
+  updateCharacter: (characterId: string, updates: Partial<Character>) => set((state) => ({
+    characters: state.characters.map(c => c.id === characterId ? { ...c, ...updates } : c),
     myCharacter: state.myCharacter?.id === characterId
-      ? { ...state.myCharacter, hp }
+      ? { ...state.myCharacter, ...updates }
       : state.myCharacter
   })),
   setLoading: (isLoading) => set({ isLoading }),

@@ -3,6 +3,8 @@ import { useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useGameStore } from '@/store/gameStore'
+import type { Character } from '@/types/character'
+
 import { StoryLog } from '@/components/game/StoryLog'
 import { ActionPanel } from '@/components/game/ActionPanel'
 import { CharacterPanel } from '@/components/character/CharacterPanel'
@@ -16,7 +18,7 @@ export default function PlayPage() {
   const {
     setCampaign, setCharacters, setMyCharacter,
     setMessages, addMessage, setEncounter,
-    updateCharacterHp, setDMThinking, setPendingRollRequest
+    updateCharacter, setDMThinking, setPendingRollRequest
   } = useGameStore()
 
   // Load initial data
@@ -66,7 +68,7 @@ export default function PlayPage() {
         table: 'characters',
         filter: `campaign_id=eq.${campaignId}`
       }, payload => {
-        updateCharacterHp(payload.new.id, payload.new.hp)
+        updateCharacter(payload.new.id, payload.new as Partial<Character>)
       })
       .subscribe()
 
@@ -87,7 +89,7 @@ export default function PlayPage() {
       supabase.removeChannel(charactersSub)
       supabase.removeChannel(combatSub)
     }
-  }, [campaignId, addMessage, updateCharacterHp, setEncounter])
+  }, [campaignId, addMessage, updateCharacter, setEncounter])
 
   const handleAction = useCallback(async (action: string) => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -126,15 +128,33 @@ export default function PlayPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen">
-      <InitiativeTracker />
-      <div className="flex flex-1 overflow-hidden">
-        <div className="flex flex-col flex-1 overflow-hidden">
-          <StoryLog />
+    <div className="relative h-screen w-full overflow-hidden flex">
+      {/* Background Image is handled by body in globals.css */}
+
+      <div className="absolute top-0 left-0 right-0 z-20 pointer-events-none">
+        <div className="pointer-events-auto">
+          <InitiativeTracker />
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col relative z-10 overflow-hidden">
+        <div className="flex-1 overflow-y-auto px-4 pb-32 pt-20 custom-scrollbar">
+          <div className="max-w-4xl mx-auto">
+            <StoryLog />
+          </div>
+        </div>
+
+        <div className="absolute bottom-0 left-0 right-0 z-30">
           <ActionPanel onAction={handleAction} />
         </div>
+      </div>
+
+      {/* Sidebar */}
+      <div className="relative z-20 h-full">
         <CharacterPanel />
       </div>
+
       <DiceRollModal onRollComplete={handleRollComplete} />
     </div>
   )

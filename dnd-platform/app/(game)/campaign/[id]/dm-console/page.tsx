@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useGameStore } from '@/store/gameStore'
+import type { Character } from '@/types/character'
 import { StoryLog } from '@/components/game/StoryLog'
 import { DMNarrationInput } from '@/components/dm/DMNarrationInput'
 import { AICopilot } from '@/components/dm/AICopilot'
@@ -16,7 +17,7 @@ export default function DMConsolePage() {
   const router   = useRouter()
   const campaignId = params.id as string
 
-  const { setCampaign, setCharacters, setMessages, addMessage, updateCharacterHp, characters } = useGameStore()
+  const { setCampaign, setCharacters, setMessages, addMessage, updateCharacter, characters } = useGameStore()
 
   const [activePanel, setActivePanel] = useState<Panel>('party')
   const [narrationDraft, setNarrationDraft] = useState('')
@@ -67,14 +68,14 @@ export default function DMConsolePage() {
       .on('postgres_changes', {
         event: 'UPDATE', schema: 'public',
         table: 'characters', filter: `campaign_id=eq.${campaignId}`
-      }, payload => updateCharacterHp(payload.new.id, payload.new.hp))
+      }, payload => updateCharacter(payload.new.id, payload.new as Partial<Character>))
       .subscribe()
 
     return () => {
       supabase.removeChannel(messagesSub)
       supabase.removeChannel(charactersSub)
     }
-  }, [campaignId, addMessage, updateCharacterHp])
+  }, [campaignId, addMessage, updateCharacter])
 
   const panels: { id: Panel; label: string }[] = [
     { id: 'party',   label: '👥 Party' },

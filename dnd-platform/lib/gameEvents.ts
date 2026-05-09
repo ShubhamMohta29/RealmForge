@@ -46,7 +46,7 @@ export function parseGameEvents(raw: string): ParsedResponse {
 
     // Parse attributes into key-value object
     const attrs: Record<string, string> = {}
-    const attrRegex = /(\w+)='([^']*)'/g
+    const attrRegex = /(\w+)=['"]([^'"]*)['"]/g
     let attrMatch
     while ((attrMatch = attrRegex.exec(attrString)) !== null) {
       attrs[attrMatch[1]] = attrMatch[2]
