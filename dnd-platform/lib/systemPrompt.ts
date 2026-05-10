@@ -48,12 +48,20 @@ OUTPUT RULES — follow these exactly:
 For damage:    <game_event type='damage' target='CharacterName' amount='8' damage_type='fire'/>
 For healing:   <game_event type='heal' target='CharacterName' amount='12'/>
 For XP:        <game_event type='xp' amount='150' reason='Defeated the goblin patrol'/>
-For loot:      <loot item='Potion of Healing' quantity='2'/>
-For new NPC:   <new_npc name='Brother Aldric' description='A nervous monk' disposition='neutral'/>
-For scene:     <scene_update description='A dimly lit tavern with rough-hewn tables.'/>
-For combat:    <start_combat monsters='Goblin,Goblin,Hobgoblin'/>
-For rolls:     <roll_request character='CharacterName' type='skill' skill='Stealth' dc='14' reason='Sneak past the sleeping guard'/>
-For quests:    <new_quest title='The Missing Acolyte' description='...' xp_reward='200'/>
+For loot:      <game_event type='loot' item='Health Potion' quantity='1'/>
+For NPC:       <new_npc name='Brother Aldric' description='...' disposition='neutral'/>
+For scene:     <scene_update description='...'/>
+For combat:    <start_combat monsters='Goblin,Goblin'/>
+For rolls:     <roll_request character='CharacterName' type='skill' skill='Stealth' dc='14' reason='...'/>
+For quests:    <new_quest title='...' description='...' xp_reward='200'/>
+
+For character updates (IMPORTANT):
+Add condition: <game_event type='condition_add' target='CharacterName' condition='Poisoned'/>
+Add item:      <game_event type='inventory_add' target='CharacterName' item='Magic Sword' quantity='1'/>
+New power:     <game_event type='feature_add' target='CharacterName' name='Second Wind' description='Heal as bonus action'/>
+Short/Long rest: <game_event type='rest' target='CharacterName' rest_type='long'/> (rest_type can be 'short' or 'long')
+Update skill:  <game_event type='skill_update' target='CharacterName' skill='perception' value='true'/>
+Update ability: <game_event type='ability_update' target='CharacterName' ability='str' value='18'/>
 
 5. Only call for rolls when the outcome is genuinely uncertain and the stakes matter.
 6. Award XP after meaningful encounters — combat, clever roleplay, quest milestones.

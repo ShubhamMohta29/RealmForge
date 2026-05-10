@@ -10,6 +10,12 @@ export type GameEventType =
   | 'loot'
   | 'condition_add'
   | 'condition_remove'
+  | 'inventory_add'
+  | 'inventory_remove'
+  | 'feature_add'
+  | 'ability_update'
+  | 'skill_update'
+  | 'rest'
   | 'roll_request'
 
 export interface GameEvent {
