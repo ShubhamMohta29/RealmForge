@@ -14,7 +14,7 @@ function MessageBubble({ message }: { message: Message }) {
     return (
       <div className="flex justify-center my-8 animate-fadeIn">
         <div className="glass max-w-2xl p-8 rounded-3xl shadow-2xl border border-white/10">
-          <p className="text-white leading-relaxed text-lg italic opacity-90"
+          <p className="text-white leading-relaxed text-lg italic"
              style={{ fontFamily: 'var(--font-serif, "Ibarra Real Nova", serif)' }}>
             {cleanContent}
           </p>
