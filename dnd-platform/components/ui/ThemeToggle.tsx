@@ -13,31 +13,37 @@ export function ThemeToggle() {
   }, [])
 
   if (!mounted) {
-    return null
+    return <div className="h-10 w-32" /> // Placeholder to avoid layout shift
   }
+
+  const isDark = theme === 'dark'
 
   return (
     <button
-      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-      className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all group relative overflow-hidden"
+      onClick={() => setTheme(isDark ? 'light' : 'dark')}
+      className={`
+        px-4 py-2 rounded-xl transition-all group relative overflow-hidden flex items-center gap-2 border shadow-lg
+        ${isDark 
+          ? 'bg-white/5 border-white/10 hover:bg-white/10' 
+          : 'bg-black/5 border-black/10 hover:bg-black/10'}
+      `}
       aria-label="Toggle Theme"
     >
-      <div className="flex items-center gap-2">
-        {theme === 'dark' ? (
-          <>
-            <span className="text-amber-highlight text-lg">☀️</span>
-            <span className="text-[10px] uppercase tracking-widest text-white/50 font-bold group-hover:text-white transition-colors">Light Mode</span>
-          </>
-        ) : (
-          <>
-            <span className="text-amber-highlight text-lg">🌙</span>
-            <span className="text-[10px] uppercase tracking-widest text-black/50 font-bold group-hover:text-black transition-colors">Dark Mode</span>
-          </>
-        )}
-      </div>
+      <span className="text-amber-highlight text-lg animate-pulse-slow">
+        {isDark ? '☀️' : '🌙'}
+      </span>
+      <span className={`
+        text-[10px] uppercase tracking-[0.2em] font-bold transition-colors
+        ${isDark ? 'text-white' : 'text-black'}
+      `}>
+        {isDark ? 'Light Mode' : 'Dark Mode'}
+      </span>
       
       {/* Glossy effect */}
-      <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+      <div className={`
+        absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none
+        ${isDark ? 'bg-gradient-to-tr from-white/10 to-transparent' : 'bg-gradient-to-tr from-black/5 to-transparent'}
+      `} />
     </button>
   )
 }

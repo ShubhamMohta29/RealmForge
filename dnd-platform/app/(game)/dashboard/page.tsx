@@ -99,13 +99,13 @@ export default function DashboardPage() {
             <h1 className="text-2xl font-bold text-white">
               Your Campaigns
             </h1>
-            <p className="text-sm text-gray-300 mt-1">
+            <p className="text-sm text-white/70 mt-1">
               Pick up where you left off or start a new adventure
             </p>
           </div>
           <button
             onClick={handleSignOut}
-            className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+            className="text-sm text-white/50 hover:text-white"
           >
             Sign out
           </button>
@@ -115,8 +115,8 @@ export default function DashboardPage() {
         {campaigns.length === 0 ? (
           <div className="glass rounded-2xl p-12 text-center mb-6">
             <p className="text-4xl mb-4">⚔️</p>
-            <p className="text-gray-500 dark:text-gray-400 mb-2">No campaigns yet</p>
-            <p className="text-sm text-gray-400">Create one or join with an invite code</p>
+            <p className="text-foreground/60 mb-2">No campaigns yet</p>
+            <p className="text-sm text-foreground/40">Create one or join with an invite code</p>
           </div>
         ) : (
           <div className="grid gap-4 mb-6">
@@ -130,7 +130,7 @@ export default function DashboardPage() {
                   onClick={() => router.push(`/campaign/${campaign.id}/play`)}
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <h2 className="font-semibold text-white">
+                    <h2 className="font-semibold text-foreground">
                       {campaign.name}
                     </h2>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
@@ -141,7 +141,7 @@ export default function DashboardPage() {
                       {campaign.dm_mode === 'ai' ? 'AI DM' : 'Human DM'}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{campaign.setting}</p>
+                  <p className="text-sm text-foreground/60">{campaign.setting}</p>
                   <p className="text-xs text-gray-400 mt-1">
                     {campaign.session_count} sessions · Invite: {campaign.invite_code}
                   </p>
@@ -179,16 +179,16 @@ export default function DashboardPage() {
           </button>
 
           <div className="glass rounded-2xl p-6">
-            <p className="font-semibold text-white mb-3">Join campaign</p>
+            <p className="font-semibold text-foreground mb-3">Join campaign</p>
             <input
               value={joinCode}
               onChange={e => setJoinCode(e.target.value)}
               placeholder="Invite code"
-              className="w-full text-sm px-3 py-2 border border-white/10 rounded-lg bg-white/5 dark:bg-black/20 text-white mb-2 focus:outline-none focus:border-amber-highlight"
+              className="w-full text-sm px-3 py-2 border border-foreground/10 rounded-lg bg-foreground/5 text-foreground mb-2 focus:outline-none focus:border-amber-highlight"
             />
             <button
               onClick={handleJoin}
-              className="w-full text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg py-2 hover:opacity-80 transition-opacity"
+              className="w-full text-sm bg-foreground text-background rounded-lg py-2 hover:opacity-80 transition-opacity font-bold"
             >
               Join
             </button>

@@ -37,7 +37,7 @@ export function ActionPanel({ onAction }: ActionPanelProps) {
   }
 
   return (
-    <div className="p-6 bg-gradient-to-t from-black/60 to-transparent">
+    <div className="p-6">
       {/* Quick actions */}
       <div className="flex flex-wrap gap-2.5 mb-5 justify-center">
         {QUICK_ACTIONS.map(({ label, action }) => (
@@ -45,7 +45,7 @@ export function ActionPanel({ onAction }: ActionPanelProps) {
             key={label}
             onClick={() => onAction(action)}
             disabled={isDMThinking}
-            className="text-[11px] font-bold uppercase tracking-wider px-4 py-2 rounded-xl border border-white/10 bg-white/5 text-gray-400 hover:bg-white/10 hover:border-white/20 hover:text-white disabled:opacity-40 transition-all shadow-lg active:scale-95"
+            className="text-[11px] font-bold uppercase tracking-wider px-4 py-2 rounded-xl border border-foreground/10 bg-background/20 text-foreground/60 hover:bg-background/40 hover:border-foreground/20 hover:text-foreground disabled:opacity-40 transition-all shadow-lg active:scale-95 backdrop-blur-md"
           >
             {label}
           </button>
@@ -64,7 +64,7 @@ export function ActionPanel({ onAction }: ActionPanelProps) {
             onKeyDown={handleKeyDown}
             disabled={isDMThinking}
             placeholder={isDMThinking ? 'The DM is considering your fate...' : 'What do you do next?'}
-            className="w-full pl-14 pr-24 py-4 rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl text-white placeholder-gray-500 focus:outline-none focus:border-amber-highlight/50 transition-all shadow-2xl"
+            className="w-full pl-14 pr-24 py-4 rounded-2xl border border-foreground/10 bg-background/40 backdrop-blur-2xl text-foreground placeholder-foreground/40 focus:outline-none focus:border-amber-highlight/50 transition-all shadow-2xl"
           />
           <button
             onClick={handleSend}

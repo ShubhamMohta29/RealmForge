@@ -13,8 +13,8 @@ function MessageBubble({ message }: { message: Message }) {
 
     return (
       <div className="flex justify-center my-8 animate-fadeIn">
-        <div className="glass max-w-2xl p-8 rounded-3xl shadow-2xl border border-white/10">
-          <p className="text-white leading-relaxed text-lg italic"
+        <div className="glass max-w-2xl p-8 rounded-3xl">
+          <p className="leading-relaxed text-lg italic"
              style={{ fontFamily: 'var(--font-serif, "Ibarra Real Nova", serif)' }}>
             {cleanContent}
           </p>
@@ -26,8 +26,8 @@ function MessageBubble({ message }: { message: Message }) {
   if (message.type === 'player_action') {
     return (
       <div className="flex justify-end mb-6 animate-fadeIn">
-        <div className="bg-black/40 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/10 shadow-lg">
-          <p className="text-sm text-amber-highlight/90 font-medium italic">
+        <div className="glass px-6 py-3 rounded-2xl shadow-lg border-none">
+          <p className="text-sm text-amber-main font-medium italic">
             &quot;{message.content}&quot;
           </p>
         </div>
@@ -38,7 +38,7 @@ function MessageBubble({ message }: { message: Message }) {
   if (message.type === 'system') {
     return (
       <div className="mb-4 animate-fadeIn">
-        <p className="text-xs text-gray-500 italic text-center uppercase tracking-widest opacity-60">
+        <p className="text-xs text-foreground/40 italic text-center uppercase tracking-widest">
           {message.content}
         </p>
       </div>
