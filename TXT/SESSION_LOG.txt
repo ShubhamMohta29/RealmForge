@@ -294,7 +294,51 @@
 
 
 ================================================================================
-  PENDING WORK (as of 2026-05-14)
+  SESSION 6 — 2026-05-15  (Email confirmation redirect fix)
+================================================================================
+
+  SCOPE
+  ─────
+  Fixed a production bug where Supabase email confirmation links redirected
+  users to localhost:3000 instead of the deployed Vercel app.
+
+  ROOT CAUSE
+  ──────────
+  supabase.auth.signUp() was called without an emailRedirectTo option.
+  Supabase fell back to its dashboard-configured Site URL (localhost:3000),
+  so confirmation links pointed there even for users on the live Vercel app.
+  Additionally, there was no route handler to receive and process the
+  confirmation callback — Supabase passes a one-time code via ?code= query
+  param that must be exchanged server-side for a session.
+
+  BUILT
+  ─────
+
+  1. Auth callback route — app/auth/callback/route.ts
+     — GET /auth/callback: reads the ?code= param from Supabase's redirect.
+     — Exchanges the code for a Supabase session using
+       supabase.auth.exchangeCodeForSession(code).
+     — On success → redirects to /dashboard.
+     — On failure → redirects to /login?error=auth_callback_failed.
+     — Uses @supabase/ssr createServerClient with async cookies() (Next.js 16).
+
+  2. Register page — emailRedirectTo added
+     — app/(auth)/register/page.tsx: signUp() options now include
+       emailRedirectTo: `${window.location.origin}/auth/callback`.
+     — window.location.origin is dynamic — resolves to localhost:3000 in dev
+       and the real Vercel domain in production. No env var needed.
+
+  REQUIRED MANUAL STEP (Supabase dashboard)
+  ──────────────────────────────────────────
+  Add allowed redirect URLs in Supabase → Authentication → URL Configuration:
+    https://your-app.vercel.app/**
+    http://localhost:3000/**
+  Supabase validates emailRedirectTo against this list and will block unknown
+  origins even if the URL is technically correct.
+
+
+================================================================================
+  PENDING WORK (as of 2026-05-15)
 ================================================================================
 
   Priority  Item

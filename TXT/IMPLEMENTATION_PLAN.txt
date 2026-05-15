@@ -41,6 +41,11 @@ Goal: A running Next.js app connected to Supabase, with auth working.
     [DONE]  Middleware (lib/middleware.ts / middleware.ts) for protected routes
     [DONE]  /login page (app/(auth)/login/page.tsx)
     [DONE]  /register page (app/(auth)/register/page.tsx)
+    [DONE]  /auth/callback route (app/auth/callback/route.ts)
+            Handles Supabase email confirmation redirect.
+            Exchanges ?code= for a session, then → /dashboard.
+            emailRedirectTo in signUp() uses window.location.origin/auth/callback
+            so it works for both localhost dev and the live Vercel deployment.
     [TODO]  /forgot-password page
 
   0.4  Core file structure
@@ -53,7 +58,8 @@ Goal: A running Next.js app connected to Supabase, with auth working.
     [DONE]  /store (Zustand game store)
 
   DONE CRITERIA: Can register, log in, and log out. Protected routes redirect
-  to /login. Dashboard loads without errors.
+  to /login. Dashboard loads without errors. Email confirmation link works on
+  both localhost and the live Vercel deployment.
   STATUS: ✓ COMPLETE (except /forgot-password)
 
 

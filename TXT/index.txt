@@ -1,6 +1,6 @@
 ================================================================================
   AGENTICDUNGEONMASTER — BUILD STATUS SNAPSHOT
-  Last updated: 2026-05-14
+  Last updated: 2026-05-15
   Status: ACTIVE DEVELOPMENT
 ================================================================================
 
@@ -50,11 +50,15 @@
   FEATURE STATUS
 ────────────────────────────────────────────────────────────────────────────────
 
-  [DONE]    User Auth (Login / Register)
+  [DONE]    User Auth (Login / Register / Email Confirmation)
             Supabase Auth. Session managed via middleware.
             RLS scoped to auth.uid() on every table.
             Date of birth collected at registration → stored in users.date_of_birth
             via handle_new_user trigger reading auth signup metadata.
+            Email confirmation: signUp() passes emailRedirectTo using
+            window.location.origin so the link works on localhost AND Vercel.
+            /auth/callback route exchanges the Supabase code for a session
+            and redirects to /dashboard.
 
   [DONE]    Content Age-Gating (PRD OQ-2)
             lib/contentRating.ts: getContentRating(dob) → under16 | teen | adult.
@@ -245,6 +249,8 @@
   │   │   ├── (auth)/
   │   │   │   ├── login/               # Login page
   │   │   │   └── register/            # Register page
+  │   │   ├── auth/
+  │   │   │   └── callback/            # Supabase email confirmation handler
   │   │   ├── (game)/
   │   │   │   ├── dashboard/           # Campaign list
   │   │   │   ├── campaign/            # Campaign creation
@@ -409,6 +415,11 @@
   POST  /api/dice
         Generic dice roll. Handles standard rolls,
         advantage/disadvantage, saving throws.
+
+  GET   /auth/callback
+        Supabase email confirmation handler. Exchanges ?code=
+        param for a session, then redirects to /dashboard.
+        Failure falls back to /login?error=auth_callback_failed.
 
 
 ────────────────────────────────────────────────────────────────────────────────

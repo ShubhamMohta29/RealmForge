@@ -107,8 +107,11 @@
       ↓  submit (name + email + password + date of birth — all required)
     Supabase creates auth user; DOB passed in raw_user_meta_data
     handle_new_user trigger writes DOB to public.users.date_of_birth
-      ↓  email confirmation sent
-    User confirms email
+      ↓  email confirmation sent (emailRedirectTo: {origin}/auth/callback)
+    User clicks confirmation link in email
+      ↓
+    /auth/callback  (Next.js route handler)
+      exchanges ?code= param for a Supabase session
       ↓
     /dashboard  (first visit — dashboard is empty, empty state shown)
 
@@ -445,6 +448,8 @@
   Unauth user hits /create-campaign               /login?next=/create-campaign
   Auth user hits /login                           /dashboard
   Auth user hits /register                        /dashboard
+  User clicks email confirmation link             /auth/callback → /dashboard
+  Auth callback code exchange fails               /login?error=auth_callback_failed
   After successful registration                   /dashboard
   After successful login                          next param URL, else /dashboard
   After logout                                    /

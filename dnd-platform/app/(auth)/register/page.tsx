@@ -22,7 +22,10 @@ export default function RegisterPage() {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { display_name: name, date_of_birth: dateOfBirth } }
+      options: {
+        data: { display_name: name, date_of_birth: dateOfBirth },
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
     })
 
     if (error) {

@@ -603,6 +603,13 @@
   POST    /api/dice                     Server-side dice roll. Returns full
                                         breakdown. All rolls are server-authoritative.
 
+  GET     /auth/callback                Supabase email confirmation callback.
+                                        Exchanges ?code= param for a session
+                                        (supabase.auth.exchangeCodeForSession).
+                                        Redirects to /dashboard on success or
+                                        /login?error=auth_callback_failed on failure.
+                                        emailRedirectTo in signUp() points here.
+
 
 ────────────────────────────────────────────────────────────────────────────────
 10. FILE STORAGE

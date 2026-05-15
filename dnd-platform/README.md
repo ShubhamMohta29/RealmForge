@@ -1,14 +1,5 @@
-# D&D Platform
+# dnd-platform
 
-This is the Next.js app that powers AgenticDungeonMaster.
+This is the Next.js app that powers RealmForge.
 
-For full documentation — setup, environment variables, architecture, and contributing — see the [repository README](../README.md).
-
-## Quick start
-
-```bash
-npm install
-cp .env.example .env.local   # fill in your keys
-npx supabase db push
-npm run dev
-```
+See the [repository README](../README.md) for setup instructions, features, and tech stack.
