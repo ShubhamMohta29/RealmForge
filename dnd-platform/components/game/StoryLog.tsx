@@ -3,6 +3,52 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { useGameStore } from '@/store/gameStore'
 import type { Message } from '@/types/message'
 
+function FlagButton({ messageId }: { messageId: string }) {
+  const [state, setState] = useState<'idle' | 'confirming' | 'sent'>('idle')
+  const [reason, setReason] = useState('')
+
+  async function submit() {
+    if (!reason.trim()) return
+    await fetch('/api/flag', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messageId, reason: reason.trim() }),
+    })
+    setState('sent')
+  }
+
+  if (state === 'sent') {
+    return <span className="text-[9px] text-green-400/70 uppercase tracking-wider">Flagged</span>
+  }
+
+  if (state === 'confirming') {
+    return (
+      <div className="flex items-center gap-2 mt-2" onClick={e => e.stopPropagation()}>
+        <input
+          autoFocus
+          value={reason}
+          onChange={e => setReason(e.target.value)}
+          placeholder="Brief reason…"
+          maxLength={200}
+          className="text-xs bg-black/30 border border-white/10 rounded-lg px-2 py-1 text-foreground placeholder-foreground/30 focus:outline-none focus:border-amber-main/40 w-40"
+        />
+        <button onClick={submit} className="text-[10px] text-amber-highlight hover:underline">Send</button>
+        <button onClick={() => setState('idle')} className="text-[10px] text-gray-500 hover:text-gray-300">Cancel</button>
+      </div>
+    )
+  }
+
+  return (
+    <button
+      onClick={() => setState('confirming')}
+      title="Flag this response"
+      className="opacity-0 group-hover:opacity-40 hover:!opacity-80 transition-opacity text-[10px] text-gray-400 hover:text-red-400 ml-auto"
+    >
+      ⚑
+    </button>
+  )
+}
+
 function MessageBubble({ message }: { message: Message }) {
   if (message.type === 'narration') {
     const cleanContent = (message.content || '')
@@ -14,11 +60,14 @@ function MessageBubble({ message }: { message: Message }) {
     return (
       <div className="flex justify-center my-8 animate-fadeIn">
         <div
-          className="glass max-w-2xl w-full p-6 rounded-2xl border-l-2 border-l-amber-main/40"
+          className="group glass max-w-2xl w-full p-6 rounded-2xl border-l-2 border-l-amber-main/40"
         >
-          <p className="text-[10px] text-amber-highlight font-semibold uppercase tracking-wider mb-3">
-            Dungeon Master
-          </p>
+          <div className="flex items-center mb-3">
+            <p className="text-[10px] text-amber-highlight font-semibold uppercase tracking-wider">
+              Dungeon Master
+            </p>
+            {message.id && <FlagButton messageId={message.id} />}
+          </div>
           <p className="leading-relaxed text-sm text-foreground"
              style={{ fontFamily: '"Ibarra Real Nova", serif', lineHeight: '1.75' }}>
             {cleanContent}

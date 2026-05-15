@@ -2,20 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin, getAuthenticatedUser } from '@/lib/supabaseServer'
 import { buildCombatants } from '@/lib/combatEngine'
 import type { Combatant } from '@/types/combat'
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+import { parseBody, CombatStartSchema } from '@/lib/validation'
 
 export async function POST(req: NextRequest) {
   try {
-    const { campaignId, monsterNames } = await req.json()
-
-    if (!campaignId || !UUID_REGEX.test(campaignId)) {
-      return NextResponse.json({ error: 'Invalid campaignId' }, { status: 400 })
-    }
-    if (!Array.isArray(monsterNames) || monsterNames.length === 0 ||
-        monsterNames.some((n: unknown) => typeof n !== 'string' || !n.trim())) {
-      return NextResponse.json({ error: 'monsterNames must be a non-empty array of strings' }, { status: 400 })
-    }
+    const body = await parseBody(req, CombatStartSchema)
+    if (body instanceof NextResponse) return body
+    const { campaignId, monsterNames } = body
 
     const user = await getAuthenticatedUser(req)
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin, getAuthenticatedUser } from '@/lib/supabaseServer'
 import { callGroq } from '@/lib/groq'
+import { parseBody, DMConsoleAssistSchema } from '@/lib/validation'
 
 export async function POST(req: NextRequest) {
   try {
-    const { campaignId, prompt } = await req.json()
+    const body = await parseBody(req, DMConsoleAssistSchema)
+    if (body instanceof NextResponse) return body
+    const { campaignId, prompt } = body
 
     const user = await getAuthenticatedUser(req)
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

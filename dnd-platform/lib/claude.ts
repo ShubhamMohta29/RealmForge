@@ -12,11 +12,19 @@ export async function callClaude(req: AIRequest): Promise<AIResponse> {
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
+      // Mark the system prompt for caching. The Anthropic API caches up to 4 blocks;
+      // cached tokens cost ~10x less and return faster after the first call.
+      const systemBlock: Anthropic.Messages.TextBlockParam & { cache_control?: { type: 'ephemeral' } } = {
+        type: 'text',
+        text: req.system,
+        cache_control: { type: 'ephemeral' },
+      }
+
       const response = await client.messages.create({
-        model: req.model || 'claude-sonnet-4-20250514',
+        model: req.model || 'claude-sonnet-4-6',
         max_tokens: req.maxTokens || 1000,
-        system: req.system,
-        messages: req.messages
+        system: [systemBlock],
+        messages: req.messages,
       })
 
       const content = response.content
@@ -27,7 +35,9 @@ export async function callClaude(req: AIRequest): Promise<AIResponse> {
       return {
         content,
         inputTokens: response.usage.input_tokens,
-        outputTokens: response.usage.output_tokens
+        outputTokens: response.usage.output_tokens,
+        // cache_read_input_tokens is present when caching is active
+        cachedTokens: (response.usage as any).cache_read_input_tokens ?? 0,
       }
     } catch (error: unknown) {
       const isOverloaded =
@@ -52,6 +62,6 @@ export async function callClaudeHaiku(req: AIRequest): Promise<AIResponse> {
   return callClaude({
     ...req,
     model: 'claude-haiku-4-5-20251001',
-    maxTokens: req.maxTokens || 500
+    maxTokens: req.maxTokens || 500,
   })
 }

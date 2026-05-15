@@ -3,19 +3,13 @@ import { supabaseAdmin, getAuthenticatedUser } from '@/lib/supabaseServer'
 import { resolveAttack, applyDamage, applyHealing, advanceTurn, checkCombatEnd } from '@/lib/combatEngine'
 import { rollDice } from '@/lib/dice'
 import type { TurnAction, CombatEncounter, Combatant, ActionResult } from '@/types/combat'
+import { parseBody, CombatActionSchema } from '@/lib/validation'
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
-    const { encounterId, action }: { encounterId: string; action: TurnAction } = body
-
-    if (!encounterId || !action) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
-    }
-
-    if (!action.type || !action.actorId) {
-      return NextResponse.json({ error: 'Action must have type and actorId' }, { status: 400 })
-    }
+    const parsed = await parseBody(req, CombatActionSchema)
+    if (parsed instanceof NextResponse) return parsed
+    const { encounterId, action } = parsed
 
     const user = await getAuthenticatedUser(req)
     if (!user) {

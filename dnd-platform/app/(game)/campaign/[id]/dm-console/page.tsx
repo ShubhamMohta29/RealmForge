@@ -10,6 +10,7 @@ import { DMNarrationInput } from '@/components/dm/DMNarrationInput'
 import { AICopilot } from '@/components/dm/AICopilot'
 import { PartyOverview } from '@/components/dm/PartyOverview'
 import { DMToolbox } from '@/components/dm/DMToolbox'
+import { DMErrorBoundary } from '@/components/ui/DMErrorBoundary'
 
 type Panel = 'party' | 'tools' | 'copilot'
 
@@ -180,10 +181,12 @@ export default function DMConsolePage() {
           )}
 
           {activePanel === 'copilot' && (
-            <AICopilot
-              campaignId={campaignId}
-              onInsert={(text: string) => setNarrationDraft(text)}
-            />
+            <DMErrorBoundary>
+              <AICopilot
+                campaignId={campaignId}
+                onInsert={(text: string) => setNarrationDraft(text)}
+              />
+            </DMErrorBoundary>
           )}
         </div>
       </div>

@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin, getAuthenticatedUser } from '@/lib/supabaseServer'
+import { parseBody, CampaignJoinSchema } from '@/lib/validation'
 
 export async function POST(req: NextRequest) {
   try {
-    const { code } = await req.json()
+    const body = await parseBody(req, CampaignJoinSchema)
+    if (body instanceof NextResponse) return body
+    const { code } = body
 
     const user = await getAuthenticatedUser(req)
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

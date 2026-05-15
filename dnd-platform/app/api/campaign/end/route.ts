@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin, getAuthenticatedUser } from '@/lib/supabaseServer'
 import { callGroq } from '@/lib/groq'
+import { parseBody, CampaignEndSchema } from '@/lib/validation'
 
 export async function POST(req: NextRequest) {
   try {
     const user = await getAuthenticatedUser(req)
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { campaignId } = await req.json()
-    if (!campaignId) return NextResponse.json({ error: 'Missing campaignId' }, { status: 400 })
+    const body = await parseBody(req, CampaignEndSchema)
+    if (body instanceof NextResponse) return body
+    const { campaignId } = body
 
     const { data: membership } = await supabaseAdmin
       .from('campaign_members')

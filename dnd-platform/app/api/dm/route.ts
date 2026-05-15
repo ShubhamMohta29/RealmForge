@@ -7,27 +7,15 @@ import { buildDMSystemPrompt } from '@/lib/systemPrompt'
 import { getContentRating } from '@/lib/contentRating'
 import { getContextForDM, shouldSummarize, summarizeSession } from '@/lib/worldMemory'
 import { resolveRollRequest } from '@/lib/dice'
-import { checkRateLimit } from '@/lib/rateLimiter'
+import { checkRateLimitUpstash } from '@/lib/upstashRateLimit'
+import { parseBody, DMSchema } from '@/lib/validation'
 
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
+    const body = await parseBody(req, DMSchema)
+    if (body instanceof NextResponse) return body
     const { campaignId, action, characterId } = body
-
-    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-    if (!campaignId || !action) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
-    }
-    if (typeof action !== 'string' || action.length > 2000) {
-      return NextResponse.json({ error: 'Action must be a string under 2000 characters' }, { status: 400 })
-    }
-    if (!UUID_REGEX.test(campaignId)) {
-      return NextResponse.json({ error: 'Invalid campaignId' }, { status: 400 })
-    }
-    if (characterId && !UUID_REGEX.test(characterId)) {
-      return NextResponse.json({ error: 'Invalid characterId' }, { status: 400 })
-    }
 
     const user = await getAuthenticatedUser(req)
     if (!user) {
@@ -45,8 +33,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Not a member of this campaign' }, { status: 403 })
     }
 
-    // Rate limit: 1 DM call per 3 seconds per campaign
-    const rl = checkRateLimit(`dm:${campaignId}`, { windowMs: 3000, max: 1 })
+    // Rate limit: 20 AI calls per user per minute, hard floor of 1 per 3 s per campaign
+    const rl = await checkRateLimitUpstash(`dm:${user.id}`, {
+      requests: 20,
+      window: '1 m' as const,
+      fallbackWindowMs: 3000,
+    })
     if (!rl.allowed) {
       return NextResponse.json(
         { error: 'Please wait a moment before sending another action.' },

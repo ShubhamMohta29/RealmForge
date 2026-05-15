@@ -15,6 +15,7 @@ import { InitiativeTracker } from '@/components/game/InitiativeTracker'
 import { DiceLog } from '@/components/game/DiceLog'
 import { CampaignEndModal } from '@/components/game/CampaignEndModal'
 import { ToastContainer } from '@/components/ui/ToastContainer'
+import { DMErrorBoundary } from '@/components/ui/DMErrorBoundary'
 
 const END_CAMPAIGN_RE = /\b(end|finish|conclude|close|archive)\b.{0,20}\bcampaign\b/i
 
@@ -295,16 +296,20 @@ export default function PlayPage() {
         {/* Center: Story Log + Action Panel */}
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 overflow-hidden">
-            <StoryLog />
+            <DMErrorBoundary>
+              <StoryLog />
+            </DMErrorBoundary>
           </div>
           {!isArchived && (
             <div className="flex-shrink-0">
-              <ActionPanel
-                onAction={handleAction}
-                dmError={dmError}
-                onClearError={() => setDmError(null)}
-                isHumanDM={campaign?.dm_mode === 'human'}
-              />
+              <DMErrorBoundary>
+                <ActionPanel
+                  onAction={handleAction}
+                  dmError={dmError}
+                  onClearError={() => setDmError(null)}
+                  isHumanDM={campaign?.dm_mode === 'human'}
+                />
+              </DMErrorBoundary>
             </div>
           )}
         </div>
