@@ -18,7 +18,7 @@
   Realtime Sync       Supabase Realtime
   AI — Narration      Groq Llama 3.3 70B
   AI — Fast Tasks     Groq Llama 3.1 8B Instant
-  AI — DM Copilot     Anthropic Claude Haiku
+  AI — DM Copilot     Groq Llama 3.3 70B (switched from Claude Haiku — ANTHROPIC_API_KEY not in use)
   Security            Supabase Row Level Security (RLS)
   Root Directory      dnd-platform/
 
@@ -78,7 +78,10 @@
             Auto-generated unique 8-char invite code.
 
   [DONE]    Join Campaign via Invite Code
-            Invite code lookup adds user to campaign_members.
+            Server-side API route (/api/campaign/join) uses supabaseAdmin to bypass
+            RLS for invite_code lookup. Client-side query was blocked by RLS since
+            non-members can't read campaigns they haven't joined yet.
+            Invite codes are lowercase UUID substrings — comparison is .toLowerCase().
 
   [DONE]    Character Creation
             Race, class, subclass selection.
@@ -175,13 +178,27 @@
             Hidden for Fighter, Barbarian, Monk, Rogue.
 
   [DONE]    Human DM Console
-            DM types narration, applies game events, broadcasts
-            to all players via Supabase Realtime.
+            Human DM creator is redirected straight to /dm-console after campaign
+            creation — no character creation step. create-character page also has
+            a guard that redirects the DM away if they navigate there directly.
+            Dashboard shows ONLY "DM Console" button for the DM (no "Play" button).
+            Clicking the campaign card also routes to dm-console for the DM.
+            Players send messages → appear in story log → DM reads and responds
+            manually. AI DM is fully bypassed for human campaigns (/api/dm returns
+            { queued: true } without calling Groq).
+            ActionPanel in human DM mode: quick-action buttons hidden, placeholder
+            reads "Message your DM...", no blocking spinner while DM responds.
             Route: /campaign/[id]/dm-console
 
-  [DONE]    AI DM Copilot (Claude Haiku)
+  [DONE]    AI DM Copilot (Groq)
             Suggests what the human DM should say next.
-            Context-aware to campaign setting and party state.
+            Includes last 10 messages (player actions + narrations) as context
+            so suggestions are relevant to the current scene.
+            "Insert into narration →" populates the DM's narration textarea directly
+            (narrationDraft state wired through DMNarrationInput draft prop).
+            DM auth check: only the campaign's human DM can call the route.
+            NOTE: uses callGroq, not callClaudeHaiku. ANTHROPIC_API_KEY is not
+            configured in .env.local and is not required.
             Route: /api/dm-console/assist
 
   [DONE]    NPC Tracking
@@ -397,8 +414,14 @@
         and broadcasts to all players via Realtime.
 
   POST  /api/dm-console/assist
-        AI Copilot (Claude Haiku) suggests what the human
-        DM should say next.
+        AI Copilot (Groq) suggests what the human DM should say next.
+        Requires caller to be the campaign's human DM (auth check).
+        Includes last 10 messages as context.
+
+  POST  /api/campaign/join
+        Joins a campaign by invite code. Uses supabaseAdmin to bypass
+        RLS (non-members can't query campaigns directly). Returns
+        campaignId, dmMode, dmUserId, hasCharacter for redirect logic.
 
   POST  /api/campaign
         Creates a new campaign with invite code. Adds creator
@@ -494,9 +517,9 @@
   ARCHITECTURE NOTES
 ────────────────────────────────────────────────────────────────────────────────
 
-  AI PIPELINE
+  AI PIPELINE — AI DM mode
     Player action
-      → /api/dm
+      → /api/dm  (checks campaign.dm_mode; if 'human', saves player_action and returns early)
       → systemPrompt.ts builds context from DB
         (campaign, characters, NPCs, quests, world memory)
       → Groq Llama 3.3 70B returns narration + embedded XML
@@ -504,6 +527,16 @@
       → gameEventApplier.ts writes to Supabase
       → message broadcast via Supabase Realtime
       → all clients update via Zustand store
+
+  AI PIPELINE — Human DM mode
+    Player action
+      → /api/dm  → saves player_action only, returns { queued: true }
+      → DM reads player message in their DM Console story log
+      → DM optionally clicks AI Copilot → /api/dm-console/assist (Groq)
+          returns suggestion with recent message context
+      → DM edits suggestion or writes own narration
+      → POST /api/dm-console/narrate  → saves narration, applies game events
+      → broadcast via Realtime to all players
 
   CONTEXT MANAGEMENT
     Only the last 6 messages are sent to Groq per request.

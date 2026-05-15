@@ -338,6 +338,94 @@
 
 
 ================================================================================
+  SESSION 7 — 2026-05-15  (Human DM overhaul, join bug, XP level-up, AI copilot)
+================================================================================
+
+  SCOPE
+  ─────
+  Three separate bug reports + one feature request, all addressed in one session:
+    1. Join campaign broken for new users
+    2. Human DM creator was still being sent to character creation
+    3. Human DM play experience still behaved like AI mode
+    4. XP awarding did not trigger level-up
+    5. AI Copilot silently failed
+
+  BUILT / FIXED
+  ─────────────
+
+  1. Join campaign — dual fix
+     (a) Case mismatch: handleJoin() in dashboard/page.tsx was converting the
+         entered code to UPPERCASE but invite codes are lowercase UUID substrings.
+         Fix: .toLowerCase() instead of .toUpperCase().
+     (b) RLS block: the client-side Supabase query used the anon key, which is
+         subject to RLS. The "Players can view their campaigns" policy only shows
+         campaigns to existing members — a non-member querying by invite_code gets
+         zero rows back even with a valid code.
+         Fix: Created app/api/campaign/join/route.ts. Uses supabaseAdmin to bypass
+         RLS for the invite_code lookup, upserts campaign_members, checks for an
+         existing character, and returns { campaignId, dmMode, dmUserId, hasCharacter }.
+         dashboard/page.tsx handleJoin() now calls this API route.
+
+  2. Human DM — no character creation, straight to DM console
+     — create-campaign/page.tsx: after campaign creation, if dmMode === 'human'
+       router pushes to /campaign/[id]/dm-console instead of /create-character.
+     — create-character/page.tsx: added useEffect guard. On mount, fetches the
+       campaign; if dm_mode === 'human' and the user is the dm_user_id, calls
+       router.replace('/campaign/[id]/dm-console') immediately.
+     — dashboard/page.tsx CampaignCard: when isDM is true and campaign is not
+       archived, shows ONLY the "DM Console" button (btn-amber, primary).
+       The "Play →" button is hidden. The card body click also routes to dm-console.
+
+  3. Human DM play mode — players message, DM narrates manually
+     — app/api/dm/route.ts: added early-return for human DM campaigns. If
+       campaign.dm_mode === 'human', saves the player_action message and returns
+       { queued: true } immediately. AI (Groq) is never called.
+     — play/page.tsx handleAction: skips setDMThinking(true/false) for human DM
+       campaigns so the input stays live and no "DM thinking" spinner appears.
+     — ActionPanel.tsx: added isHumanDM?: boolean prop.
+         Human DM mode: quick action buttons hidden (they are AI prompts, not
+         relevant for human DM). Placeholder changes to "Message your DM...".
+         Local sending state (600ms) gives brief feedback without blocking input.
+         AI DM mode: behaviour unchanged.
+     — StoryLog.tsx: showThinking = isDMThinking && campaign?.dm_mode !== 'human'.
+       The bouncing "Dungeon Master" dots only appear in AI mode.
+
+  4. AI Copilot — wired + fixed
+     — DMNarrationInput.tsx: added draft?: string and onDraftChange?: (text) => void
+       props. Component is now fully controlled when these are provided — the AI
+       Copilot's "Insert into narration →" click populates the textarea directly.
+     — dm-console/page.tsx: passes draft={narrationDraft} and
+       onDraftChange={setNarrationDraft} to DMNarrationInput, completing the loop.
+     — AICopilot.tsx: added proper error handling — non-200 responses now surface
+       the error text in the suggestion area instead of going blank.
+     — app/api/dm-console/assist/route.ts:
+         (a) Switched from callClaudeHaiku to callGroq. ANTHROPIC_API_KEY is not
+             set in .env.local (marked "optional / future use" in .env.example),
+             causing every assist call to throw silently. Groq is the active AI.
+         (b) Now fetches the last 10 player_action + narration messages and includes
+             them as a "Recent story log" in the system prompt so AI suggestions are
+             contextually relevant to what players actually did.
+         (c) Added DM auth check (dm_mode === 'human' && dm_user_id === user.id).
+
+  5. XP level-up bug
+     — Root cause: app/api/dm-console/narrate/route.ts was selecting only
+       id, name, hp, max_hp, temp_hp, xp from characters. gameEventApplier.ts
+       needs level, class, and ability_scores to run the level-up check
+       (newLevel > c.level) and the HP increase calculation.
+       With level === undefined, JavaScript evaluates (2 > undefined) as false,
+       so XP was saved to the DB but the character's level never updated.
+     — Fix: expanded SELECT to include class, level, ability_scores,
+       proficiency_bonus, conditions, inventory.
+
+  OPEN ITEMS CARRIED FORWARD
+  ──────────────────────────
+  — Full spell casting system (canCastSpell, expendSpellSlot, short/long rest)
+  — Level-Up UI wizard modal
+  — DM advanced tool panels (NPC manager, quest tracker, encounter builder)
+  — Session log page
+
+
+================================================================================
   PENDING WORK (as of 2026-05-15)
 ================================================================================
 

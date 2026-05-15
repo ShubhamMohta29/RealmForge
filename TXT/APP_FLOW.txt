@@ -202,38 +202,52 @@
   ACTOR: DM User (campaign creator, Human mode selected)
 
   Step 1   Creates campaign with "Human DM" mode selected.
-           After character creation → /campaign/[id]/play
+           → POST /api/campaign/create
+           → Redirected DIRECTLY to /campaign/[id]/dm-console.
+             No character creation step — the DM is not a player.
+             (create-character page also has a guard that redirects the DM
+              away if they navigate there directly.)
 
-  Step 2   Dashboard shows campaign card with a "DM Console" badge/button.
-           DM clicks "Open DM Console."
-           → /campaign/[id]/dm-console
+  Step 2   Dashboard shows the campaign card with ONLY a "DM Console" button
+           (amber, primary). No "Play →" button is shown for the DM.
+           Clicking the card body also routes to /dm-console.
 
   Step 3   DM Console layout:
-           Right:   Party Overview (all player characters — HP, AC, level,
-                   conditions, updated in real time)
-           Center: Shared Story Log (same log all players see)
+           Left:   Shared Story Log (same messages all players see)
                    + DM Narration Input (bottom)
-           Left:  AI Copilot Panel + DM Toolbox
+           Right:  Panel tabs — Party | Tools | AI Assist
+             Party tab:     PartyOverview (all player characters — HP, AC,
+                            level, conditions, updated in real time)
+             Tools tab:     DMToolbox (monster lookup, XP award, DM notes)
+             AI Assist tab: AICopilot (Groq suggestions with recent-message context)
 
-  Step 4   DM types narration into the input. Clicks "Broadcast."
+  Step 4   Players send messages → appear in story log as player_action entries.
+           DM reads them. AI DM is never called (/api/dm returns { queued: true }
+           immediately for human campaigns without calling Groq).
+
+  Step 5   DM optionally opens AI Assist tab, clicks a quick prompt or types a
+           custom question (e.g. "player just chose to fight the guards — what
+           happens next?").
+           → POST /api/dm-console/assist (Groq, with last 10 messages as context)
+           → Suggestion appears in the right panel.
+           → DM clicks "Insert into narration →" to populate the narration textarea.
+           → DM edits as needed.
+
+  Step 6   DM types (or edits the AI suggestion) in the narration textarea.
+           Clicks "Send."
            → POST /api/dm-console/narrate
-           → Message stored and broadcast via Realtime to all players.
-           → Game events parsed and applied (same pipeline as AI mode).
-
-  Step 5   DM clicks "Get Suggestion" in the AI Copilot Panel.
-           → POST /api/dm-console/assist
-           → Claude Haiku returns a suggested next narration line.
-           → DM clicks "Use This" to populate the narration input with
-             the suggestion. Can edit before sending.
+           → Narration stored and broadcast via Realtime to all players.
+           → Game events parsed and applied (XP, damage, conditions, etc.).
 
   ─────────────────────────────────
 
   ACTOR: Player (Human DM Mode)
 
-  - Player's experience at /campaign/[id]/play is identical to AI mode.
-  - The only difference: the "Send Action" button triggers a player-action
-    message (stored as type='player_action') without calling the AI DM API.
-    The DM reads it in their console and responds manually.
+  - Player experience at /campaign/[id]/play looks the same as AI mode but
+    the quick-action buttons are hidden and the input reads "Message your DM..."
+  - Submitting a message saves it as type='player_action' without calling Groq.
+    No "DM is thinking..." spinner appears — the DM will respond when ready.
+  - Narrations from the DM appear in the story log in real time via Realtime.
 
 
 ────────────────────────────────────────────────────────────────────────────────
@@ -453,10 +467,13 @@
   After successful registration                   /dashboard
   After successful login                          next param URL, else /dashboard
   After logout                                    /
-  After campaign creation                         /dashboard (+ Invite Modal)
+  After campaign creation (AI DM mode)            /campaign/[id]/create-character
+  After campaign creation (Human DM mode)         /campaign/[id]/dm-console
   After joining a campaign (no character)         /campaign/[id]/create-character
   After joining a campaign (character exists)     /campaign/[id]/play
+  After joining as Human DM of the campaign       /campaign/[id]/dm-console
   After character creation                        /campaign/[id]/play
+  Human DM hits /campaign/[id]/create-character   /campaign/[id]/dm-console (guard redirect)
   Non-DM hits /campaign/[id]/dm-console           /campaign/[id]/play
   User hits campaign they're not a member of      /dashboard
   User hits archived campaign's play URL          Read-only archived view
