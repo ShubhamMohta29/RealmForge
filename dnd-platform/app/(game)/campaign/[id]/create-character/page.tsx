@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { CLASSES, FEATURE_DESCRIPTIONS } from '@/lib/dnd5e/classes'
@@ -15,6 +15,22 @@ export default function CreateCharacterPage() {
   const params = useParams()
   const router = useRouter()
   const campaignId = params.id as string
+
+  useEffect(() => {
+    async function checkDmAccess() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data: campaign } = await supabase
+        .from('campaigns')
+        .select('dm_mode, dm_user_id')
+        .eq('id', campaignId)
+        .single()
+      if (campaign?.dm_mode === 'human' && campaign?.dm_user_id === user.id) {
+        router.replace(`/campaign/${campaignId}/dm-console`)
+      }
+    }
+    checkDmAccess()
+  }, [campaignId, router])
 
   const [step, setStep]           = useState(1)
   const [name, setName]           = useState('')

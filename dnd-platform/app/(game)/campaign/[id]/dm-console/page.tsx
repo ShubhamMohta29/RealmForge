@@ -142,6 +142,8 @@ export default function DMConsolePage() {
           <DMNarrationInput
             campaignId={campaignId}
             characters={characters.map(c => ({ id: c.id, name: c.name }))}
+            draft={narrationDraft}
+            onDraftChange={setNarrationDraft}
           />
         </div>
       </div>

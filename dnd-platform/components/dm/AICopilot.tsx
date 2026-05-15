@@ -32,9 +32,13 @@ export function AICopilot({ campaignId, onInsert }: AICopilotProps) {
         body: JSON.stringify({ campaignId, prompt: text })
       })
       const data = await response.json()
-      setSuggestion(data.suggestion || '')
-    } catch {
-      setSuggestion('Failed to get suggestion.')
+      if (!response.ok) {
+        setSuggestion(`Error: ${data.error || 'Request failed'}`)
+      } else {
+        setSuggestion(data.suggestion || 'No suggestion returned.')
+      }
+    } catch (err) {
+      setSuggestion(`Failed to reach AI: ${err instanceof Error ? err.message : 'Unknown error'}`)
     }
     setLoading(false)
   }

@@ -191,9 +191,10 @@ export default function PlayPage() {
     }
 
     setDmError(null)
-    const { myCharacter } = useGameStore.getState()
+    const { myCharacter, campaign: currentCampaign } = useGameStore.getState()
+    const isHumanDM = currentCampaign?.dm_mode === 'human'
 
-    setDMThinking(true)
+    if (!isHumanDM) setDMThinking(true)
     try {
       const response = await fetch('/api/dm', {
         method: 'POST',
@@ -209,7 +210,7 @@ export default function PlayPage() {
     } catch {
       setDmError("The Dungeon Master's voice fades... Please try again.")
     } finally {
-      setDMThinking(false)
+      if (!isHumanDM) setDMThinking(false)
     }
   }, [campaignId, setDMThinking])
 
@@ -298,7 +299,12 @@ export default function PlayPage() {
           </div>
           {!isArchived && (
             <div className="flex-shrink-0">
-              <ActionPanel onAction={handleAction} dmError={dmError} onClearError={() => setDmError(null)} />
+              <ActionPanel
+                onAction={handleAction}
+                dmError={dmError}
+                onClearError={() => setDmError(null)}
+                isHumanDM={campaign?.dm_mode === 'human'}
+              />
             </div>
           )}
         </div>

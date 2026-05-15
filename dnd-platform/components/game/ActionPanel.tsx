@@ -18,17 +18,23 @@ interface ActionPanelProps {
   onAction: (action: string) => void
   dmError?: string | null
   onClearError?: () => void
+  isHumanDM?: boolean
 }
 
-export function ActionPanel({ onAction, dmError, onClearError }: ActionPanelProps) {
+export function ActionPanel({ onAction, dmError, onClearError, isHumanDM }: ActionPanelProps) {
   const [input, setInput] = useState('')
+  const [sending, setSending] = useState(false)
   const { isDMThinking, myCharacter } = useGameStore()
 
-  function handleSend() {
+  const blocked = isHumanDM ? sending : isDMThinking
+
+  async function handleSend() {
     const text = input.trim()
-    if (!text || isDMThinking) return
+    if (!text || blocked) return
+    if (isHumanDM) setSending(true)
     onAction(text)
     setInput('')
+    if (isHumanDM) setTimeout(() => setSending(false), 600)
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -56,19 +62,21 @@ export function ActionPanel({ onAction, dmError, onClearError }: ActionPanelProp
         </div>
       )}
 
-      {/* Quick actions */}
-      <div className="flex flex-wrap gap-2.5 mb-5 justify-center">
-        {QUICK_ACTIONS.map(({ label, action }) => (
-          <button
-            key={label}
-            onClick={() => onAction(action)}
-            disabled={isDMThinking}
-            className="text-[11px] font-bold uppercase tracking-wider px-4 py-2 rounded-xl border border-foreground/10 bg-background/20 text-foreground/60 hover:bg-background/40 hover:border-foreground/20 hover:text-foreground disabled:opacity-40 transition-all shadow-lg active:scale-95 backdrop-blur-md"
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      {/* Quick actions — only shown for AI DM */}
+      {!isHumanDM && (
+        <div className="flex flex-wrap gap-2.5 mb-5 justify-center">
+          {QUICK_ACTIONS.map(({ label, action }) => (
+            <button
+              key={label}
+              onClick={() => onAction(action)}
+              disabled={isDMThinking}
+              className="text-[11px] font-bold uppercase tracking-wider px-4 py-2 rounded-xl border border-foreground/10 bg-background/20 text-foreground/60 hover:bg-background/40 hover:border-foreground/20 hover:text-foreground disabled:opacity-40 transition-all shadow-lg active:scale-95 backdrop-blur-md"
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Text input */}
       <div className="max-w-4xl mx-auto">
@@ -80,13 +88,17 @@ export function ActionPanel({ onAction, dmError, onClearError }: ActionPanelProp
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            disabled={isDMThinking}
-            placeholder={isDMThinking ? 'The DM is considering your fate...' : 'What do you do next?'}
+            disabled={blocked}
+            placeholder={
+              isHumanDM
+                ? (sending ? 'Message sent...' : 'Message your DM...')
+                : (isDMThinking ? 'The DM is considering your fate...' : 'What do you do next?')
+            }
             className="w-full pl-14 pr-24 py-4 rounded-2xl border border-foreground/10 bg-background/40 backdrop-blur-2xl text-foreground placeholder-foreground/40 focus:outline-none focus:border-amber-highlight/50 transition-all shadow-2xl"
           />
           <button
             onClick={handleSend}
-            disabled={isDMThinking || !input.trim()}
+            disabled={blocked || !input.trim()}
             className="absolute right-2 top-1/2 -translate-y-1/2 btn-amber px-6 py-2 rounded-xl text-sm font-bold disabled:opacity-50 transition-all shadow-lg active:scale-95"
           >
             Send

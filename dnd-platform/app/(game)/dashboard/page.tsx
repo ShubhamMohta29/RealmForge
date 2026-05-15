@@ -49,40 +49,31 @@ export default function DashboardPage() {
   }, [router])
 
   async function handleJoin() {
-    const code = joinCode.trim().toUpperCase()
+    const code = joinCode.trim()
     setJoinError(null)
     if (!code) return
 
-    const { data: campaign } = await supabase
-      .from('campaigns')
-      .select('id')
-      .eq('invite_code', code)
-      .single()
+    const res = await fetch('/api/campaign/join', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code })
+    })
+    const data = await res.json()
 
-    if (!campaign) {
-      setJoinError("That code doesn't exist. Check it with your host and try again.")
+    if (!res.ok) {
+      setJoinError(data.error || "Failed to join campaign.")
       return
     }
 
+    const { campaignId, dmMode, dmUserId } = data
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
 
-    await supabase.from('campaign_members').upsert({
-      campaign_id: campaign.id,
-      user_id: user.id
-    })
-
-    const { data: existingCharacter } = await supabase
-      .from('characters')
-      .select('id')
-      .eq('campaign_id', campaign.id)
-      .eq('user_id', user.id)
-      .maybeSingle()
-
-    if (existingCharacter) {
-      router.push(`/campaign/${campaign.id}/play`)
+    if (dmMode === 'human' && dmUserId === user?.id) {
+      router.push(`/campaign/${campaignId}/dm-console`)
+    } else if (data.hasCharacter) {
+      router.push(`/campaign/${campaignId}/play`)
     } else {
-      router.push(`/campaign/${campaign.id}/create-character`)
+      router.push(`/campaign/${campaignId}/create-character`)
     }
   }
 
@@ -213,7 +204,7 @@ function CampaignCard({
     <div className={`glass rounded-2xl p-5 flex items-center justify-between hover:border-amber-main/20 transition-colors ${
       isArchived ? 'opacity-60' : ''
     }`}>
-      <div className="flex-1 cursor-pointer min-w-0" onClick={onPlay}>
+      <div className="flex-1 cursor-pointer min-w-0" onClick={isDM && !isArchived ? onDMConsole : onPlay}>
         <div className="flex items-center gap-2 mb-1 flex-wrap">
           <h2 className="font-semibold text-foreground truncate">{campaign.name}</h2>
           <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex-shrink-0 ${
@@ -238,22 +229,23 @@ function CampaignCard({
       </div>
 
       <div className="flex flex-col gap-1.5 ml-4 flex-shrink-0">
-        <button
-          onClick={onPlay}
-          className={`text-xs px-4 py-1.5 rounded-lg font-semibold transition-colors ${
-            isArchived
-              ? 'border border-white/12 text-gray-400 hover:text-gray-300'
-              : 'btn-amber'
-          }`}
-        >
-          {isArchived ? 'Read →' : 'Play →'}
-        </button>
-        {isDM && !isArchived && (
+        {isDM && !isArchived ? (
           <button
             onClick={onDMConsole}
-            className="text-xs px-4 py-1.5 border border-white/12 text-gray-400 rounded-lg hover:border-white/24 hover:text-gray-300 transition-colors"
+            className="text-xs px-4 py-1.5 btn-amber rounded-lg font-semibold transition-colors"
           >
             DM Console
+          </button>
+        ) : (
+          <button
+            onClick={onPlay}
+            className={`text-xs px-4 py-1.5 rounded-lg font-semibold transition-colors ${
+              isArchived
+                ? 'border border-white/12 text-gray-400 hover:text-gray-300'
+                : 'btn-amber'
+            }`}
+          >
+            {isArchived ? 'Read →' : 'Play →'}
           </button>
         )}
       </div>

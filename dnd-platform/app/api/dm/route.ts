@@ -76,6 +76,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
     }
 
+    // Human DM mode — just save the player action, no AI narration
+    if (campaign.dm_mode === 'human') {
+      await supabaseAdmin.from('messages').insert({
+        campaign_id: campaignId,
+        character_id: characterId || null,
+        type: 'player_action',
+        content: action
+      })
+      return NextResponse.json({ queued: true })
+    }
+
     const systemPrompt = buildDMSystemPrompt({
       campaign,
       characters: characters || [],

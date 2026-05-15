@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
 
     const { data: characters } = await supabaseAdmin
       .from('characters')
-      .select('id, name, hp, max_hp, temp_hp, xp')
+      .select('id, name, class, level, hp, max_hp, temp_hp, xp, ability_scores, proficiency_bonus, conditions, inventory')
       .eq('campaign_id', campaignId)
 
     await applyEvents(events, campaignId, characters || [])

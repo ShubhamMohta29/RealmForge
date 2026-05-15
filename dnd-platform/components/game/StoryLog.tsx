@@ -65,7 +65,8 @@ function MessageBubble({ message }: { message: Message }) {
 }
 
 export function StoryLog() {
-  const { messages, isDMThinking } = useGameStore()
+  const { messages, isDMThinking, campaign } = useGameStore()
+  const showThinking = isDMThinking && campaign?.dm_mode !== 'human'
   const bottomRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [showJumpButton, setShowJumpButton] = useState(false)
@@ -94,7 +95,7 @@ export function StoryLog() {
     if (!userScrolledUp.current) {
       scrollToBottom()
     }
-  }, [messages, isDMThinking, scrollToBottom])
+  }, [messages, showThinking, scrollToBottom])
 
   return (
     <div className="relative h-full flex flex-col">
@@ -103,7 +104,7 @@ export function StoryLog() {
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto px-4 py-6 custom-scrollbar"
       >
-        {messages.length === 0 && !isDMThinking && (
+        {messages.length === 0 && !showThinking && (
           <div className="flex flex-col items-center justify-center h-full gap-3 opacity-60">
             <p className="text-gray-400 text-sm text-center">Your adventure is beginning...</p>
             <div className="w-6 h-6 border-2 border-amber-main/30 border-t-amber-highlight rounded-full animate-spin" />
@@ -114,7 +115,7 @@ export function StoryLog() {
           <MessageBubble key={message.id} message={message} />
         ))}
 
-        {isDMThinking && (
+        {showThinking && (
           <div className="flex justify-center my-8 animate-fadeIn">
             <div className="glass max-w-2xl w-full p-6 rounded-2xl border-l-2 border-l-amber-main/40">
               <p className="text-[10px] text-amber-highlight font-semibold uppercase tracking-wider mb-3">
