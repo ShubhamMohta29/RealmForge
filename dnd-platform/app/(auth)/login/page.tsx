@@ -69,6 +69,13 @@ export default function LoginPage() {
           No account?{' '}
           <Link href="/register" className="text-amber-highlight hover:underline">Create one</Link>
         </p>
+
+        <p className="text-[10px] text-center text-gray-600 mt-6">
+          By signing in you agree to our{' '}
+          <Link href="/terms" className="underline hover:text-gray-400">Terms</Link>
+          {' '}and{' '}
+          <Link href="/privacy" className="underline hover:text-gray-400">Privacy Policy</Link>
+        </p>
       </div>
     </div>
   )

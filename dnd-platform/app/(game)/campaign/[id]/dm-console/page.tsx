@@ -10,6 +10,7 @@ import { DMNarrationInput } from '@/components/dm/DMNarrationInput'
 import { AICopilot } from '@/components/dm/AICopilot'
 import { PartyOverview } from '@/components/dm/PartyOverview'
 import { DMToolbox } from '@/components/dm/DMToolbox'
+import { DMErrorBoundary } from '@/components/ui/DMErrorBoundary'
 
 type Panel = 'party' | 'tools' | 'copilot'
 
@@ -27,31 +28,56 @@ export default function DMConsolePage() {
 
   useEffect(() => {
     async function load() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); setAuthChecked(true); return }
-
-      const [campaignRes, charactersRes, messagesRes] = await Promise.all([
-        supabase.from('campaigns').select('*').eq('id', campaignId).single(),
-        supabase.from('characters').select('*').eq('campaign_id', campaignId),
-        supabase.from('messages').select('*').eq('campaign_id', campaignId)
-          .order('created_at', { ascending: true }).limit(50)
-      ])
-
-      if (campaignRes.data) {
-        setCampaign(campaignRes.data)
-        setCampaignLocal(campaignRes.data)
-
-        // Redirect if not human DM campaign
-        if (campaignRes.data.dm_mode !== 'human' || campaignRes.data.dm_user_id !== user.id) {
-          router.push(`/campaign/${campaignId}/play`)
+      try {
+        console.log('DM Console: Fetching data for campaign:', campaignId)
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          console.warn('DM Console: No authenticated user found')
+          router.push('/login')
           setAuthChecked(true)
           return
         }
-      }
 
-      if (charactersRes.data) setCharacters(charactersRes.data)
-      if (messagesRes.data) setMessages(messagesRes.data)
-      setAuthChecked(true)
+        const [campaignRes, charactersRes, messagesRes] = await Promise.all([
+          supabase.from('campaigns').select('*').eq('id', campaignId).single(),
+          supabase.from('characters').select('*').eq('campaign_id', campaignId),
+          supabase.from('messages').select('*').eq('campaign_id', campaignId)
+            .order('created_at', { ascending: true }).limit(50)
+        ])
+
+        if (campaignRes.error) console.error('DM Console: Campaign load error:', campaignRes.error)
+        if (charactersRes.error) console.error('DM Console: Characters load error:', charactersRes.error)
+        if (messagesRes.error) console.error('DM Console: Messages load error:', messagesRes.error)
+
+        if (campaignRes.data) {
+          console.log('DM Console: Campaign loaded:', campaignRes.data.name)
+          setCampaign(campaignRes.data)
+          setCampaignLocal(campaignRes.data)
+
+          // Redirect if not human DM campaign
+          if (campaignRes.data.dm_mode !== 'human' || campaignRes.data.dm_user_id !== user.id) {
+            console.warn('DM Console: User is not the DM or mode is not human. Redirecting to play page.')
+            router.push(`/campaign/${campaignId}/play`)
+            setAuthChecked(true)
+            return
+          }
+        }
+
+        if (charactersRes.data) {
+          console.log('DM Console: Characters loaded:', charactersRes.data.length)
+          setCharacters(charactersRes.data)
+        }
+        
+        if (messagesRes.data) {
+          console.log('DM Console: Messages loaded:', messagesRes.data.length)
+          setMessages(messagesRes.data)
+        }
+        
+        setAuthChecked(true)
+      } catch (err) {
+        console.error('DM Console: Critical error during load:', err)
+        setAuthChecked(true)
+      }
     }
 
     load()
@@ -117,6 +143,8 @@ export default function DMConsolePage() {
           <DMNarrationInput
             campaignId={campaignId}
             characters={characters.map(c => ({ id: c.id, name: c.name }))}
+            draft={narrationDraft}
+            onDraftChange={setNarrationDraft}
           />
         </div>
       </div>
@@ -153,10 +181,12 @@ export default function DMConsolePage() {
           )}
 
           {activePanel === 'copilot' && (
-            <AICopilot
-              campaignId={campaignId}
-              onInsert={(text: string) => setNarrationDraft(text)}
-            />
+            <DMErrorBoundary>
+              <AICopilot
+                campaignId={campaignId}
+                onInsert={(text: string) => setNarrationDraft(text)}
+              />
+            </DMErrorBoundary>
           )}
         </div>
       </div>

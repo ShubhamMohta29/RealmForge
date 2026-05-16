@@ -1,0 +1,610 @@
+================================================================================
+  IMPLEMENTATION PLAN — Step-by-Step Build Sequence
+  RealmForge — AI-Powered D&D 5e Online Platform
+  Version: 1.0
+  Date: 2026-05-13
+  Status: Phases 0–6 complete. Phase 7 in progress (critical bug + spell system remain).
+================================================================================
+
+  HOW TO READ THIS DOCUMENT
+  ─────────────────────────
+  [DONE]     Already built and in the codebase.
+  [PARTIAL]  Started but incomplete — specific gaps noted.
+  [TODO]     Not yet built.
+
+  Work through phases in order. Each phase must reach its Done Criteria
+  before the next phase begins. Never build Phase N+1 infrastructure before
+  Phase N is complete and tested end-to-end.
+
+
+────────────────────────────────────────────────────────────────────────────────
+PHASE 0 — PROJECT FOUNDATION & TOOLING
+Goal: A running Next.js app connected to Supabase, with auth working.
+────────────────────────────────────────────────────────────────────────────────
+
+  0.1  Repository & project setup
+    [DONE]  Next.js initialized with App Router, TypeScript, Tailwind CSS
+    [DONE]  Path aliases configured in tsconfig (@/components, @/lib, @/types, @/store)
+    [DONE]  ESLint configured
+    [DONE]  Git repository initialized
+    [DONE]  .env.local with all required slots (Supabase, Groq, Anthropic)
+
+  0.2  Supabase setup
+    [DONE]  Supabase project created and connected
+    [DONE]  @supabase/supabase-js installed
+    [DONE]  Supabase CLI installed, supabase/config.toml present
+    [DONE]  lib/supabase.ts (browser client)
+    [DONE]  lib/supabaseServer.ts (service role server client)
+
+  0.3  Auth
+    [DONE]  Supabase Auth configured (email/password)
+    [DONE]  Middleware (lib/middleware.ts / middleware.ts) for protected routes
+    [DONE]  /login page (app/(auth)/login/page.tsx)
+    [DONE]  /register page (app/(auth)/register/page.tsx)
+    [DONE]  /auth/callback route (app/auth/callback/route.ts)
+            Handles Supabase email confirmation redirect.
+            Exchanges ?code= for a session, then → /dashboard.
+            emailRedirectTo in signUp() uses window.location.origin/auth/callback
+            so it works for both localhost dev and the live Vercel deployment.
+    [TODO]  /forgot-password page
+
+  0.4  Core file structure
+    [DONE]  /app/api/* route handlers
+    [DONE]  /components/game, /components/character, /components/dm, /components/ui
+    [DONE]  /lib (claude.ts, groq.ts, dice.ts, gameEvents.ts, worldMemory.ts, etc.)
+    [DONE]  /lib/dnd5e (abilities.ts, classes.ts, races.ts, monsters.ts, conditions.ts, leveling.ts)
+    [DONE]  /types (character.ts, message.ts)
+    [PARTIAL] /types — missing campaign.ts, combat.ts, npc.ts, quest.ts
+    [DONE]  /store (Zustand game store)
+
+  DONE CRITERIA: Can register, log in, and log out. Protected routes redirect
+  to /login. Dashboard loads without errors. Email confirmation link works on
+  both localhost and the live Vercel deployment.
+  STATUS: ✓ COMPLETE (except /forgot-password)
+
+
+────────────────────────────────────────────────────────────────────────────────
+PHASE 1 — DATA MODELS & DATABASE SCHEMA
+Goal: All tables exist in Supabase with RLS and correct relationships.
+────────────────────────────────────────────────────────────────────────────────
+
+  1.1  Migrations
+    [DONE]  001_users.sql — users table + handle_new_user trigger
+    [DONE]  002_campaigns.sql — campaigns + campaign_members tables, RLS
+    [DONE]  003_characters.sql — characters table, RLS
+    [DONE]  004_messages.sql — messages table, index on (campaign_id, created_at)
+    [DONE]  005_game_tables.sql — combat_encounters, npcs, quests,
+                                   world_memory_summaries
+    [DONE]  006_realtime.sql — Realtime publication for 4 tables
+    [DONE]  007/008/009 — RLS recursion fixes (plpgsql security definer function)
+
+  1.2  TypeScript interfaces
+    [DONE]  /types/character.ts — Character, AbilityScores, Spells, InventoryItem,
+                                   DeathSaves, SpellSlots
+    [DONE]  /types/message.ts — Message, MessageType
+    [TODO]  /types/campaign.ts — Campaign, CampaignStatus, DMMode interfaces
+    [TODO]  /types/combat.ts — CombatEncounter, Combatant, Monster, TurnAction
+    [TODO]  /types/npc.ts — NPC, NPCDisposition
+    [TODO]  /types/quest.ts — Quest, QuestStatus, QuestObjective
+    [TODO]  /types/gameEvents.ts — all parsed AI event types (currently inline
+                                    in gameEvents.ts and aiTypes.ts)
+
+  DONE CRITERIA: All tables exist in Supabase. Can insert and read from each
+  table via the Supabase dashboard. TypeScript types match DB columns exactly.
+  STATUS: ✓ COMPLETE (missing type files are low-risk — types exist inline)
+
+
+────────────────────────────────────────────────────────────────────────────────
+PHASE 2 — D&D 5e RULES ENGINE
+Goal: Pure TypeScript rules logic — no AI calls, fully deterministic.
+────────────────────────────────────────────────────────────────────────────────
+
+  2.1  Dice engine (lib/dice.ts)
+    [DONE]  rollDice(notation) — parses '2d6+3', '1d20', etc.
+    [DONE]  rollWithAdvantage / rollWithDisadvantage
+    [DONE]  rollInitiative(character)
+    [DONE]  rollDeathSave
+    [DONE]  rollAbilityCheck, rollSkillCheck, rollSavingThrow
+    [DONE]  rollAttack(attacker, weapon, target)
+    [DONE]  All dice server-side via /api/dice route
+
+  2.2  Ability scores & modifiers (lib/dnd5e/abilities.ts)
+    [DONE]  getModifier(score)
+    [DONE]  getProficiencyBonus(level)
+    [DONE]  getSkillModifier(character, skill)
+    [DONE]  getSavingThrowModifier(character, ability)
+    [DONE]  All 18 skills mapped to governing ability scores
+
+  2.3  Classes data (lib/dnd5e/classes.ts)
+    [DONE]  All 12 core classes defined
+    [DONE]  Hit dice, primary ability, saving throw profs, armor/weapon profs
+    [DONE]  Spellcasting flags and spell slot progression tables
+    [DONE]  Subclasses at level 3 (≥2 per class)
+    [PARTIAL] Class features by level — verify levels 1–5 are all complete
+
+  2.4  Races data (lib/dnd5e/races.ts)
+    [DONE]  All 8 core races with ability score increases, speed, traits
+    [DONE]  Sub-races (High/Wood Elf, Hill/Mountain Dwarf, etc.)
+
+  2.5  HP & leveling (lib/dnd5e/leveling.ts)
+    [DONE]  calculateMaxHp(character)
+    [DONE]  xpThresholds[] — levels 1–20
+    [DONE]  checkLevelUp, applyLevelUp
+    [DONE]  awardXP (called by gameEventApplier.ts on xp events)
+
+  2.6  Combat rules (lib/dnd5e/conditions.ts + lib/combatEngine.ts)
+    [DONE]  All 15 conditions defined with mechanical effects
+    [DONE]  Combat state machine in combatEngine.ts
+    [DONE]  startCombat, advanceTurn, applyDamage, applyHealing
+    [DONE]  applyCondition / removeCondition
+    [DONE]  checkDeath, resolveDeathSave
+
+  2.7  Spells data (lib/dnd5e/spells.ts)
+    [DONE]  lib/dnd5e/spells.ts exists with:
+             getStartingSpells(cls) — level-1 starting spells per class
+             SPELL_DESCRIPTIONS — ~80 SRD spells with one-line descriptions
+             getSpellDescription(name) — lookup helper
+    [DONE]  spell_learn game event — DM can add spells mid-adventure via XML tag
+             (gameEvents.ts + gameEventApplier.ts)
+    [DONE]  Character creation auto-populates spells.known from getStartingSpells
+    [TODO]  canCastSpell(character, spell)
+    [TODO]  expendSpellSlot(character, level)
+    [TODO]  shortRest / longRest slot recovery
+
+  2.8  Monsters data (lib/dnd5e/monsters.ts)
+    [DONE]  Monster stat blocks imported
+    [DONE]  getMonsterByName(name)
+    [TODO]  getMonstersByCR(min, max)
+
+  DONE CRITERIA: Can call rollDice('2d6+3') and get a valid result.
+  Character creation calculates all derived stats correctly.
+  XP award triggers level-up at the right threshold.
+  STATUS: ✓ MOSTLY COMPLETE — spell system needs verification/expansion
+
+
+────────────────────────────────────────────────────────────────────────────────
+PHASE 3 — AI DM ENGINE
+Goal: Single-player AI DM session works locally end-to-end.
+────────────────────────────────────────────────────────────────────────────────
+
+  3.1  API wrappers
+    [DONE]  lib/groq.ts — Groq Llama 3.3 70B wrapper (narration)
+    [DONE]  lib/claude.ts — Anthropic Claude Haiku wrapper (copilot, complex monsters)
+    [DONE]  Retry logic with exponential backoff on API errors
+    [DONE]  Service role key used server-side only — never exposed to client
+
+  3.2  System prompt builder (lib/systemPrompt.ts)
+    [DONE]  buildDMSystemPrompt(campaign, characters, recentSummary)
+    [DONE]  Sections: role, setting, world state, characters, scene,
+                       quests, NPCs, memory summary, output format rules
+
+  3.3  Game event protocol (lib/gameEvents.ts + lib/gameEventApplier.ts)
+    [DONE]  parseGameEvents(text) — extracts XML tags, returns events + clean prose
+    [DONE]  applyGameEvents(events, campaignId) — writes each event to Supabase
+    [DONE]  Supported events: damage, heal, xp, loot, condition_add,
+                              start_combat, new_npc, scene_update, new_quest,
+                              quest_update
+    [DONE]  Unknown/malformed tags are skipped gracefully (no crash)
+
+  3.4  World state schema
+    [DONE]  campaigns.world_state JSONB field with calendar, location,
+             factions, major_events, secrets, weather, economy
+
+  3.5  Memory management (lib/worldMemory.ts)
+    [DONE]  getContextForDM(campaignId) — returns summary + recent messages
+    [DONE]  shouldSummarize(campaignId) — triggers at 20 messages
+    [DONE]  summarizeSession — calls Groq Llama 3.1 8B Instant
+    [DONE]  Summaries stored in world_memory_summaries table
+    [TODO]  Confirm summarizeArc (campaign-level arc summary) is implemented
+
+  3.6  AI DM API route (app/api/dm/route.ts)
+    [DONE]  POST /api/dm — full game loop
+    [DONE]  Auth check, campaign membership validation
+    [DONE]  Context fetch, system prompt build, Groq call
+    [DONE]  Event parse → DB apply → message store → Realtime broadcast
+    [DONE]  Returns { narration, events, updatedCharacter }
+    [DONE]  Rate limiting (1 request per 3 seconds per campaign)
+
+  DONE CRITERIA: Submit a player action → AI responds with narration →
+  game events (XP, HP) are applied to the DB → all clients see the update.
+  STATUS: ✓ COMPLETE
+
+
+────────────────────────────────────────────────────────────────────────────────
+PHASE 4 — COMBAT SYSTEM
+Goal: Full combat turn cycle — initiative, player turns, monster AI, death saves.
+────────────────────────────────────────────────────────────────────────────────
+
+  4.1  Combat state machine (lib/combatEngine.ts)
+    [DONE]  initiateCombat, rollAllInitiative, startFirstTurn
+    [DONE]  processPlayerAction, advanceTurn, endCombat
+
+  4.2  Action resolution
+    [DONE]  resolveAttack — to-hit roll vs AC, damage on hit, crit on nat 20
+    [DONE]  resolveDash, resolveDisengage
+    [PARTIAL] resolveCastSpell — framework exists, needs spell data integration
+    [TODO]  resolveHelp, resolveHide, resolveGrapple, resolveShove
+    [TODO]  Bonus actions and reactions per-turn tracking
+
+  4.3  Monster AI (lib/monsterAI.ts)
+    [DONE]  Basic monsters: target lowest-HP player, basic attack
+    [DONE]  Complex monsters: Claude Haiku decides action
+    [DONE]  Monster action parsed from JSON, falls back to basic attack on failure
+
+  4.4  Conditions system
+    [DONE]  All 15 conditions defined in lib/dnd5e/conditions.ts
+    [DONE]  Condition effects applied to attack rolls and saving throws
+    [PARTIAL] Verify exhaustion (6 levels) and concentration checks are implemented
+
+  4.5  Combat API routes
+    [DONE]  POST /api/combat/start
+    [DONE]  POST /api/combat/action
+    [DONE]  POST /api/dice (generic dice route also handles combat rolls)
+    [TODO]  POST /api/combat/end-turn (explicit pass-turn without action)
+    [TODO]  GET /api/combat/[id] (fetch current encounter state)
+
+  DONE CRITERIA: Start a combat → see initiative tracker → player attacks →
+  monster counter-attacks → HP decreases on all clients → combat ends with
+  XP awarded.
+  STATUS: ✓ SUBSTANTIALLY COMPLETE — gap items are edge cases, not blockers
+
+
+────────────────────────────────────────────────────────────────────────────────
+PHASE 5 — FRONTEND: PLAYER EXPERIENCE
+Goal: Full player UI with real-time multiplayer. Two-player session works.
+────────────────────────────────────────────────────────────────────────────────
+
+  5.1  Character creation (/campaign/[id]/create-character)
+    [DONE]  Race selection
+    [DONE]  Class selection
+    [DONE]  Ability score rolling (4d6 drop lowest, server-side)
+    [DONE]  Racial bonus application
+    [DONE]  Skill proficiency selection
+    [DONE]  Name and backstory
+    [DONE]  Auto-calculated HP, AC, modifiers
+    [DONE]  Saves character to Supabase, redirects to /play
+    [PARTIAL] Starting equipment selection (may be skipped in current flow)
+    [PARTIAL] Portrait upload (column exists, upload UI not confirmed)
+
+  5.2  Campaign dashboard (/dashboard)
+    [DONE]  Lists all campaigns user belongs to
+    [DONE]  Create campaign flow → invite code displayed
+    [DONE]  Join campaign with invite code
+    [TODO]  Campaign lobby page (/campaign/[id]/lobby) — party assembly before play
+    [DONE]  Archive campaigns from dashboard UI (active/archived sections, read-only view)
+
+  5.3  Main game table (/campaign/[id]/play)
+    [DONE]  Three-column layout (dice log | story log | character panel)
+    [DONE]  StoryLog component — scrolling feed with all message types
+    [DONE]  ActionPanel — free-text input + send button
+    [DONE]  "DM is thinking..." animated indicator during AI response
+    [DONE]  Auto-scroll to bottom on new message
+    [TODO]  Quick action buttons (Look around, Attack, Cast Spell, etc.)
+    [DONE]  "Jump to latest" button when scrolled up
+    [TODO]  Presence indicators (who is online in the session)
+
+  5.4  Character panel (components/character/CharacterPanel.tsx)
+    [DONE]  Character name, class, level, avatar initial
+    [DONE]  HP bar (color-coded: green/yellow/red by threshold)
+    [DONE]  Temp HP display
+    [DONE]  AC, Speed, Proficiency Bonus stat cards
+    [DONE]  XP bar with level label
+    [DONE]  All 6 ability scores with modifiers
+    [DONE]  Active conditions (badge display)
+    [DONE]  "View full character sheet →" button
+    [DONE]  Spell slot / mana bar for spellcasters (ManaBar component)
+
+  5.5  Character sheet modal (components/character/CharacterSheet.tsx)
+    [DONE]  Modal structure, tabs navigation
+    [DONE]  Overview tab: ability scores, saving throws, skills
+    [DONE]  Spells tab: slot grid, spell attack/DC, prepared spell dots
+    [DONE]  Inventory tab: rarity-coloured items, weight total
+    [DONE]  Features tab (class/race features with descriptions)
+    [TODO]  Notes tab (inline editing)
+    [TODO]  Real-time updates to sheet while modal is open
+
+  5.6  Initiative tracker (components/game/InitiativeTracker.tsx)
+    [DONE]  Appears when combat is active
+    [DONE]  Turn order list sorted by initiative
+    [DONE]  Active combatant highlighted
+    [DONE]  HP, AC, conditions per combatant
+    [DONE]  Round counter
+    [TODO]  "End Turn" button enabled only on current player's turn
+
+  5.7  Dice log (components/game/DiceLog.tsx)
+    [DONE]  Shows last N rolls with die type, result, modifier, DC, success/failure
+    [DONE]  Roll requests from DM resolve automatically server-side — no modal needed.
+             DiceRollModal.tsx deleted. Results appear instantly in DiceLog.
+    [TODO]  Manual dice tray buttons (d4, d6, d8, d10, d12, d20, d100)
+
+  5.8  Real-time sync
+    [DONE]  Supabase Realtime subscriptions on messages, characters,
+             combat_encounters, campaigns
+    [DONE]  Zustand store updated on each Realtime event
+    [DONE]  Character stat changes (HP, XP, conditions) propagate immediately
+    [TODO]  Graceful reconnection — fetch missed messages on reconnect
+    [TODO]  "Player joined/left" system messages
+
+  DONE CRITERIA: Two players in the same campaign both see new messages
+  instantly. HP changes on one client appear immediately on the other.
+  STATUS: ✓ SUBSTANTIALLY COMPLETE — gaps are polish, not core functionality
+
+
+────────────────────────────────────────────────────────────────────────────────
+PHASE 6 — HUMAN DM MODE
+Goal: Human DM can run a full session from the DM console.
+────────────────────────────────────────────────────────────────────────────────
+
+  6.1  DM console layout (/campaign/[id]/dm-console)
+    [DONE]  Page exists and is protected (non-DM redirect to /play)
+    [DONE]  Three-column layout (party overview | story log | AI copilot + toolbox)
+    [DONE]  DM narration input (DMNarrationInput.tsx)
+    [TODO]  Private DM notes panel (never sent to players)
+    [TODO]  "Whisper to player" — dm_whisper message type (column exists in DB)
+
+  6.2  DM toolbox panels (components/dm/DMToolbox.tsx)
+    [DONE]  Component exists
+    [PARTIAL] Verify which panels are implemented:
+              Party overview (PartyOverview.tsx — [DONE])
+              NPC manager, Quest tracker, Monster lookup,
+              Encounter builder, Loot generator, World notes
+              — confirm which are present in DMToolbox.tsx
+
+  6.3  AI copilot panel (components/dm/AICopilot.tsx)
+    [DONE]  Component exists
+    [DONE]  POST /api/dm-console/assist — Claude Haiku call, DM-only response
+    [DONE]  "Insert into narration" button
+    [PARTIAL] Quick prompt buttons — verify these presets are in the UI
+
+  6.4  DM combat control
+    [DONE]  DM can trigger combat start from the console
+    [TODO]  DM override initiative order (drag-to-reorder)
+    [TODO]  "Auto-pilot monsters" toggle
+    [TODO]  Direct HP / condition adjustment for any combatant
+    [TODO]  Add/remove combatants mid-combat
+
+  DONE CRITERIA: Human DM can type narration → it appears in player story logs →
+  AI copilot suggestions appear only for the DM. Events are parsed and applied.
+  STATUS: ✓ CORE COMPLETE — advanced DM tools are the remaining gap
+
+
+────────────────────────────────────────────────────────────────────────────────
+PHASE 7 — POLISH, PERSISTENCE & ADVANCED FEATURES
+Goal: Production-ready — performance, security, mobile, all edge cases handled.
+────────────────────────────────────────────────────────────────────────────────
+
+  Priority order: Critical → High → Medium → Low (future scope)
+
+  ─── CRITICAL (blocks a good player experience) ──────────────────────────────
+
+  7.1  Campaign lifecycle
+    [DONE]  Archive campaign flow — two-step confirmation, read-only archived view
+    [DONE]  Campaign End modal — AI generates epilogue (Groq 70B) → confirm → archive
+    [DONE]  Archived campaigns accessible read-only from dashboard
+    [DONE]  "End campaign" intent detection in player actions (END_CAMPAIGN_RE regex)
+
+  7.2  Landing page (/)
+    [DONE]  app/page.tsx exists
+    [TODO]  Verify content: hero headline, two CTAs (Play Now / Sign In),
+             feature highlights, correct routing to /register and /login
+
+  7.3  Auth redirects (complete the ?next= param pattern)
+    [DONE]  Unauthenticated → /login
+    [TODO]  Post-login redirect to originally requested URL
+    [TODO]  Authenticated user hitting /login → /dashboard
+
+  7.4  Missing type files
+    [TODO]  /types/campaign.ts
+    [TODO]  /types/combat.ts
+    [TODO]  /types/npc.ts
+    [TODO]  /types/quest.ts
+    [TODO]  /types/gameEvents.ts
+
+  ─── HIGH PRIORITY ───────────────────────────────────────────────────────────
+
+  7.5  Mana bar (FUTURE-8 — marked high priority in PRD)
+    [DONE]  Mana bar below HP bar in character panel
+    [DONE]  Shows current / total spell slots as blue gradient bar
+    [DONE]  Martial classes (Fighter, Barbarian, Monk, Rogue) show no bar
+    [PARTIAL] Spell slot values per class (uses character.spells.slots JSONB)
+    [TODO]  Mana updated by game events (expendSpellSlot not yet wired to events)
+
+  7.6  Rate limiting
+    [DONE]  1 AI DM call per 3 seconds per campaign (/api/dm) — lib/rateLimiter.ts
+    [TODO]  10 dice rolls per minute per user (/api/dice)
+    [TODO]  Input sanitization — strip HTML from player input before sending to AI
+
+  7.7  Error handling & resilience
+    [TODO]  Error boundaries on all major game components (no full-screen crash)
+    [DONE]  Groq API error → inline banner in ActionPanel with retry + dismiss
+    [TODO]  Connection status indicator (Realtime health)
+    [TODO]  Reconnect handler — fetch missed messages on Realtime reconnect
+    [TODO]  Debounce player input (prevent double-send on fast clicks)
+
+  7.8  Empty states (all pages)
+    [DONE]  Dashboard empty state (no campaigns yet) with Create / Join CTAs
+    [TODO]  Story log empty state ("Your adventure is beginning...")
+    [TODO]  Party overview empty state ("Waiting for players...")
+    [TODO]  Dice log empty state ("Your rolls will appear here.")
+    [TODO]  Inventory empty state, Spells tab for non-spellcasters
+
+  7.9  Toast notification system
+    [DONE]  Level up toast (triggers on character.level increase via Realtime)
+    [DONE]  XP gained toast (triggers on character.xp increase via Realtime)
+    [DONE]  Item received toast (triggers on narration metadata loot event)
+    [DONE]  New quest toast (triggers on narration metadata new_quest event)
+    [TODO]  Connection lost / restored banner
+
+  7.10  Spell system (FUTURE-1 — medium priority, but PRD OQ-5 says aim for comprehensiveness)
+    [DONE]  Starting spells auto-populated at character creation (getStartingSpells)
+    [DONE]  ~80 spell descriptions in SPELL_DESCRIPTIONS, shown in character sheet
+    [DONE]  spell_learn game event — DM can grant spells mid-adventure
+    [DONE]  Spells tab in character sheet — slot grid, spell descriptions, prepared dots
+    [TODO]  canCastSpell, expendSpellSlot, shortRest, longRest
+    [TODO]  Spell quick-cast buttons in ActionPanel for spellcasters
+
+  ─── MEDIUM PRIORITY ─────────────────────────────────────────────────────────
+
+  7.11  Performance
+    [TODO]  Paginate story log — load last 50 messages, fetch older on scroll-up
+    [TODO]  Optimistic UI for HP/XP changes (apply client-side, reconcile server)
+
+  7.12  Security hardening
+    [TODO]  Validate player is campaign member on every API request
+    [TODO]  Validate player's turn before accepting combat actions (server-side)
+    [TODO]  Output sanitization — Claude response rendered as text, never HTML
+
+  7.13  Session log & replay (Phase 7.2 from reference doc)
+    [TODO]  After-session summary (automated Claude Haiku call)
+    [TODO]  Session log page — chronological sessions with summaries
+    [TODO]  Export session as text (PDF is lower priority)
+
+  7.14  Equipment and item mechanics (FUTURE-2)
+    [TODO]  Equip weapon/armor modifies AC and attack bonus
+    [TODO]  Consumables (potions) trigger heal events on use
+    [TODO]  Attunement slots (max 3) with enforcement
+    [TODO]  Item rarity color coding in inventory UI
+
+  7.15  DM advanced tools (remaining from Phase 6)
+    [TODO]  NPC manager panel (create, edit, mark dead, change disposition)
+    [TODO]  Quest tracker panel (create, complete, award XP)
+    [TODO]  Monster lookup (search by name or CR, view stat block)
+    [TODO]  Encounter builder (select monsters, view difficulty rating)
+    [TODO]  Loot generator (roll by CR, customize)
+    [TODO]  DM private notes panel
+    [TODO]  "Whisper to player" functionality
+
+  7.16  Level-Up UI Wizard (FUTURE-3 — currently auto-increments)
+    [TODO]  Level-up modal triggered when XP threshold crossed
+    [TODO]  Steps: +HP roll, ASI or feat choice, new class features
+    [TODO]  Logic already exists in lib/dnd5e/leveling.ts — needs UI only
+
+  ─── LOW PRIORITY / FUTURE SCOPE ─────────────────────────────────────────────
+
+  7.17  Content age-gating (PRD OQ-2)
+    [DONE]  Date of birth field on register page — stored in auth metadata
+    [DONE]  011_age_gate.sql migration — date_of_birth column on users,
+             handle_new_user trigger reads DOB from auth metadata
+    [DONE]  lib/contentRating.ts — getContentRating(dob) → under16 | teen | adult
+    [DONE]  System prompt modifier based on age gate (lib/systemPrompt.ts):
+              Under 16: no violence details, no sexual content, no profanity
+              16–17: vivid violence allowed, no sexual content
+              18+: no restriction
+    [DONE]  DM route fetches user DOB, passes contentRating to prompt builder
+
+  7.18  Portrait / avatar upload
+    [TODO]  Supabase Storage bucket setup
+    [TODO]  Portrait upload UI in character creation
+    [TODO]  Avatar upload UI in account settings
+
+  7.19  Visual map (FUTURE-5)
+    [TODO]  HTML5 Canvas grid with tokens
+    [TODO]  Fog of war
+    [TODO]  DM uploads map image
+
+  7.20  Mobile optimization (FUTURE-7)
+    [TODO]  Single-column layout with bottom tab nav
+    [TODO]  Bottom sheet for character panel
+    [TODO]  44×44px minimum tap targets on all interactive elements
+
+  7.21  Character export (FUTURE-6)
+    [TODO]  Export character sheet as JSON
+    [TODO]  PDF export (lower priority)
+
+  7.22  Campaign lobby (/campaign/[id]/lobby)
+    [TODO]  Party assembly screen before session starts
+    [TODO]  "Start Session" button (DM only)
+    [TODO]  Shareable invite link display
+    [TODO]  List of joined players with character names
+
+  7.23  Sound effects (optional, opt-in)
+    [TODO]  Dice roll sound
+    [TODO]  Combat start sound
+    [TODO]  Level-up sound
+    [TODO]  User opt-in toggle in preferences
+
+  DONE CRITERIA (Phase 7 complete):
+    - All critical items above are resolved.
+    - Mana bar implemented.
+    - Rate limiting in place on all AI endpoints.
+    - Error boundaries prevent any full-page crashes.
+    - All empty states are handled gracefully.
+    - Campaign archive flow works end-to-end.
+    - Security: no HTML injection, server-side turn validation.
+    STATUS: IN PROGRESS
+
+
+────────────────────────────────────────────────────────────────────────────────
+CURRENT SPRINT — IMMEDIATE NEXT ACTIONS
+────────────────────────────────────────────────────────────────────────────────
+
+  Tackle in this order:
+
+  1. [DONE]     Fix play page redirect bug — retry loop in loadData
+                File: app/(game)/campaign/[id]/play/page.tsx
+                Root cause: Supabase RLS timing after character creation.
+                Fix: retry campaign fetch 5× at 500ms intervals before redirect.
+
+  2. [DONE]     Automatic dice rolls — DiceRollModal deleted, server resolves rolls,
+                results appear in DiceLog instantly. No player interaction required.
+
+  3. [DONE]     Starting spells + descriptions — lib/dnd5e/spells.ts created.
+                Character creation populates spells.known. CharacterSheet shows
+                descriptions. spell_learn event added for mid-adventure learning.
+
+  4. [DONE]     Feature descriptions — FEATURE_DESCRIPTIONS in classes.ts.
+                All 12 classes covered. Character creation stores proper descriptions.
+
+  5. [MEDIUM]   Spell casting system — canCastSpell, expendSpellSlot,
+                shortRest/longRest, spell quick-cast buttons in ActionPanel
+
+  3. [LOW]      Level-Up UI wizard modal
+                Logic in lib/dnd5e/leveling.ts. Needs modal UI only.
+
+  4. [LOW]      DM advanced tool panels (NPC manager, quest tracker, monster lookup)
+
+  5. [LOW]      Session log page (/campaign/[id]/sessions)
+
+
+────────────────────────────────────────────────────────────────────────────────
+MILESTONE SUMMARY
+────────────────────────────────────────────────────────────────────────────────
+
+  Milestone               Status    What it means
+  ──────────────────────  ────────  ──────────────────────────────────────────
+  End of Phase 0          DONE      Auth works, dashboard loads
+  End of Phase 1          DONE      All DB tables exist, types defined
+  End of Phase 2          DONE*     Rules engine works, spells need expansion
+  End of Phase 3          DONE      AI DM plays a single-player session
+  End of Phase 4          DONE*     Combat is playable end-to-end
+  End of Phase 5          DONE*     Multiplayer works, real-time sync
+  End of Phase 6          DONE*     Human DM mode functional
+  End of Phase 7          TODO      Production-ready, all polish complete
+
+  * = core is done, some edge cases / advanced features remain
+
+
+────────────────────────────────────────────────────────────────────────────────
+KEY TECHNICAL DECISIONS (for AI agent reference)
+────────────────────────────────────────────────────────────────────────────────
+
+  Decision                Rationale
+  ──────────────────────  ──────────────────────────────────────────────────
+  Next.js App Router      API routes + frontend in one repo. Middleware handles
+                          auth cleanly.
+  Supabase                Built-in Realtime, Auth, and Postgres. No Socket.io.
+  Groq (not OpenAI)       Llama 3.3 70B is fast and cheap for narration.
+  Server-side dice        Client dice can be cheated. All rolls are server-auth.
+  XML event tags          More reliable than regex on prose. Claude rarely
+                          breaks XML when instructed clearly.
+  Layered memory          Full campaign history exceeds context limits.
+                          Summarization keeps costs and tokens manageable.
+  Claude Haiku (copilot)  10x cheaper than Sonnet. Quick suggestions don't
+                          need Sonnet's reasoning power.
+  Zustand (not Redux)     Simpler for game state. Works cleanly with Supabase
+                          Realtime subscriptions.
+  Dark mode only          Hardcoded 'dark' class on <html>. ThemeProvider
+                          removed. Light mode breaks the atmosphere.
+
+
+================================================================================

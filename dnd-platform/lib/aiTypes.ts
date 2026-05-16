@@ -14,4 +14,8 @@ export interface AIResponse {
   content: string
   inputTokens: number
   outputTokens: number
+  cachedTokens?: number
+  error?: string
+  status?: number
+  retryAfter?: number
 }

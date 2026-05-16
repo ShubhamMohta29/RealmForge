@@ -1,0 +1,623 @@
+================================================================================
+  AGENTICDUNGEONMASTER — BUILD STATUS SNAPSHOT
+  Last updated: 2026-05-16
+  Status: ACTIVE DEVELOPMENT
+================================================================================
+
+
+────────────────────────────────────────────────────────────────────────────────
+  TECH STACK
+────────────────────────────────────────────────────────────────────────────────
+
+  Framework           Next.js 16.2.4
+  UI Library          React 19.2.4
+  Language            TypeScript 5
+  Styling             Tailwind CSS 4
+  State Management    Zustand 5.0.12
+  Database / Auth     Supabase (PostgreSQL)
+  Realtime Sync       Supabase Realtime
+  AI — Narration      Groq Llama 3.3 70B
+  AI — Fast Tasks     Groq Llama 3.1 8B Instant
+  AI — DM Copilot     Groq Llama 3.3 70B (switched from Claude Haiku — ANTHROPIC_API_KEY not in use)
+  Security            Supabase RLS + Zod validation + Upstash rate limiting + Sentry
+  Rate Limiting       lib/upstashRateLimit.ts (Upstash Redis in prod, in-memory fallback in dev)
+  Error Monitoring    Sentry (@sentry/nextjs) — needs NEXT_PUBLIC_SENTRY_DSN to activate
+  Root Directory      dnd-platform/
+
+
+────────────────────────────────────────────────────────────────────────────────
+  OVERALL BUILD PROGRESS
+────────────────────────────────────────────────────────────────────────────────
+
+  Authentication & User Management        [####################] 100%  (+ age-gating)
+  Campaign Management                     [####################] 100%
+  AI Dungeon Master (Narration Engine)    [####################] 100%
+  Dice Rolling System (auto, server-side)  [####################] 100%
+  Multiplayer Realtime Sync               [####################] 100%
+  World Memory & Session Summaries        [####################] 100%
+  Human DM Console + AI Copilot           [####################] 100%
+  Campaign Lifecycle (end / archive)      [####################] 100%
+  Toast Notification System               [##################..] 90%
+  Dark-Mode UI Polish                     [####################] 100%
+  XP Bar & Visual Tracking                [####################] 100%
+  Mana / Spell Slot Bar                   [################....] 80%
+  Character Creation & Sheets             [####################] 98%
+  Combat System                           [##################..] 90%
+  Spell System                            [###########.........] 55%
+  Equipment / Item Mechanics              [#####...............] 25%
+  Leveling UI Wizard / Feats              [....................] 0%
+  Production Readiness / Security         [################....] 80%
+
+
+────────────────────────────────────────────────────────────────────────────────
+  FEATURE STATUS
+────────────────────────────────────────────────────────────────────────────────
+
+  [DONE]    User Auth (Login / Register / Email Confirmation)
+            Supabase Auth. Session managed via middleware.
+            RLS scoped to auth.uid() on every table.
+            Date of birth collected at registration → stored in users.date_of_birth
+            via handle_new_user trigger reading auth signup metadata.
+            Email confirmation: signUp() passes emailRedirectTo using
+            window.location.origin so the link works on localhost AND Vercel.
+            /auth/callback route exchanges the Supabase code for a session
+            and redirects to /dashboard.
+
+  [DONE]    Content Age-Gating (PRD OQ-2)
+            lib/contentRating.ts: getContentRating(dob) → under16 | teen | adult.
+            DM system prompt (lib/systemPrompt.ts) injects content rules based on rating:
+              under 16 — no gore, no sexual content, no profanity (child-safe)
+              16–17    — vivid violence allowed, no sexual content
+              18+      — no restriction
+            /api/dm fetches users.date_of_birth, computes rating, passes to prompt builder.
+            Existing users without DOB default to 'adult' rating.
+
+  [DONE]    Dashboard
+            Lists all campaigns user is a member of.
+            Links to play screen or DM console.
+
+  [DONE]    Campaign Creation
+            Name, setting, DM mode (AI or Human).
+            Auto-generated unique 8-char invite code.
+
+  [DONE]    Join Campaign via Invite Code
+            Server-side API route (/api/campaign/join) uses supabaseAdmin to bypass
+            RLS for invite_code lookup. Client-side query was blocked by RLS since
+            non-members can't read campaigns they haven't joined yet.
+            Invite codes are lowercase UUID substrings — comparison is .toLowerCase().
+
+  [DONE]    Character Creation
+            Race, class, subclass selection.
+            4d6-drop-lowest ability score rolling.
+            Full D&D 5e class and race options.
+
+  [DONE]    Character Sheet Display
+            Dark-fantasy modal with tabs: Overview, Spells, Inventory, Features.
+            Overview: all ability scores/modifiers, saving throws, skill list.
+            Spells: slot grid, spell attack/DC, prepared spell dots.
+            Each spell shows a one-line description (from SPELL_DESCRIPTIONS map).
+            Inventory: rarity-coloured item cards, weight total.
+            Features: class and racial features with one-line descriptions
+            (from FEATURE_DESCRIPTIONS map covering all 12 classes).
+            Live HP, XP bar, AC, conditions. Realtime sync.
+
+  [DONE]    AI Dungeon Master (Groq Llama 3.3 70B)
+            Builds dynamic system prompt from campaign context,
+            NPCs, quests, and world memory. Returns 1-2 vivid
+            narration paragraphs per player action.
+
+  [DONE]    Game Event System (XML tags)
+            AI embeds structured XML in narration text.
+            Parser extracts and applies events atomically to DB.
+            Event types: damage, heal, xp, loot, condition_add,
+            start_combat, new_npc, scene_update, spell_learn.
+
+  [DONE]    World Memory / Session Summaries
+            Every 20 narration messages, Llama 3.1 8B generates
+            a 150-200 word summary stored in DB. Injected into
+            subsequent prompts to maintain long-term continuity.
+
+  [DONE]    Combat System
+            Initiative (1d20 + DEX), attack rolls, critical
+            hits/misses, damage application, temp HP buffer,
+            death saves, condition effects.
+            Routes: /api/combat/start, /api/combat/action
+
+  [DONE]    Monster AI (Groq / Claude)
+            Targets lowest-HP player (tactical).
+            Claude Haiku for complex monsters with special
+            abilities. Falls back to basic attacks.
+            Respects damage immunities.
+
+  [DONE]    Initiative Tracker UI
+            Turn-order display, round counter, HP/AC per
+            combatant, conditions visualization.
+
+  [DONE]    Dice Rolling — fully automatic, server-side
+            d4, d6, d8, d10, d12, d20, d100.
+            Advantage/disadvantage support.
+            Skill checks, saving throws, attack rolls with
+            automatic modifier application.
+            When DM requests a roll, it resolves server-side instantly.
+            Result appears in DiceLog; no player interaction required.
+            DiceRollModal removed — was redundant and re-rolled independently.
+
+  [DONE]    Dice Log Sidebar
+            Left sidebar showing recent rolls, most recent
+            first, with roll purpose, DC, and success/failure badge.
+
+  [DONE]    XP Bar
+            Visual progress bar for XP. Fixed updating issue
+            (PR #3). Realtime sync with character updates.
+
+  [DONE]    HP Bar
+            Visual HP bar with colour shifts by health %.
+
+  [DONE]    Dark-Mode Only Design
+            ThemeProvider removed. Dark mode hardcoded on <html class="dark">.
+            Glass morphism panels, amber accent, Ibarra Real Nova serif.
+
+  [DONE]    Story Log
+            Chat-style message history. Shows narration,
+            player actions, dice rolls, combat log.
+            Realtime updates for all players.
+            "Jump to latest" button when scrolled up.
+
+  [DONE]    Campaign End / Archive Flow
+            Player types "end/conclude/archive campaign" → intent detected.
+            CampaignEndModal loads AI-generated epilogue (Groq 70B).
+            Confirm → campaigns.status set to 'completed'.
+            Archived campaigns show read-only banner on play page.
+            Dashboard lists active and archived campaigns separately.
+
+  [DONE]    Toast Notification System
+            Zustand toastStore + ToastContainer (bottom-right, auto-dismiss 4s).
+            Types: xp, levelup, loot, quest, info, success, error.
+            Wired to Realtime character updates and narration metadata events.
+
+  [DONE]    Mana Bar (Spell Slot Display)
+            ManaBar component below HP bar in character panel.
+            Shows current / total spell slots as a blue gradient bar.
+            Hidden for Fighter, Barbarian, Monk, Rogue.
+
+  [DONE]    Human DM Console
+            Human DM creator is redirected straight to /dm-console after campaign
+            creation — no character creation step. create-character page also has
+            a guard that redirects the DM away if they navigate there directly.
+            Dashboard shows ONLY "DM Console" button for the DM (no "Play" button).
+            Clicking the campaign card also routes to dm-console for the DM.
+            Players send messages → appear in story log → DM reads and responds
+            manually. AI DM is fully bypassed for human campaigns (/api/dm returns
+            { queued: true } without calling Groq).
+            ActionPanel in human DM mode: quick-action buttons hidden, placeholder
+            reads "Message your DM...", no blocking spinner while DM responds.
+            Route: /campaign/[id]/dm-console
+
+  [DONE]    AI DM Copilot (Groq)
+            Suggests what the human DM should say next.
+            Includes last 10 messages (player actions + narrations) as context
+            so suggestions are relevant to the current scene.
+            "Insert into narration →" populates the DM's narration textarea directly
+            (narrationDraft state wired through DMNarrationInput draft prop).
+            DM auth check: only the campaign's human DM can call the route.
+            NOTE: uses callGroq, not callClaudeHaiku. ANTHROPIC_API_KEY is not
+            configured in .env.local and is not required.
+            Route: /api/dm-console/assist
+
+  [DONE]    NPC Tracking
+            Persistent NPCs with name, description, disposition,
+            location, notes. Referenced in DM system prompts.
+
+  [DONE]    Quest Tracking
+            Active quests with descriptions, objectives, XP
+            rewards. Status: active / completed / abandoned.
+
+  [DONE]    Multiplayer Realtime Sync
+            Supabase Realtime subscriptions for messages,
+            characters, and combat encounters. All players
+            see changes instantly — no polling.
+
+  [DONE]    Token Optimisation
+            Only last 6 messages sent to AI per request.
+            Fast 8B model for summaries, 70B for narration.
+            Reduces API costs on long campaigns.
+
+  [DONE]    Zod Input Validation (all 10 API routes)
+            lib/validation.ts: parseBody(req, Schema) helper + per-route schemas.
+            Every API route validates and type-narrows its request body before
+            touching the DB or calling an AI model. Returns 422 on bad input.
+
+  [DONE]    Security Headers
+            vercel.json: CORS, X-Content-Type-Options, X-Frame-Options,
+              Referrer-Policy, Permissions-Policy for all routes.
+            next.config.ts: full Content-Security-Policy covering all
+              external origins (Supabase, Groq, Anthropic, Google Fonts).
+
+  [DONE]    Upstash Rate Limiter (lib/upstashRateLimit.ts)
+            Sliding-window rate limit backed by Upstash Redis in production.
+            Falls back to in-memory limiter in local dev (no credentials needed).
+            /api/dm: 20 AI calls per user per minute.
+            Needs UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN in Vercel.
+
+  [DONE]    Error Boundaries (components/ui/DMErrorBoundary.tsx)
+            react-error-boundary wrapping StoryLog, ActionPanel (play page),
+            and AICopilot (DM console). Friendly fallback UI instead of crash.
+
+  [DONE]    Prompt Caching — lib/claude.ts
+            System prompt passed with cache_control: { type: 'ephemeral' }.
+            Cached tokens reported in AIResponse.cachedTokens.
+            Applies when Anthropic API is used (summarisation, future routes).
+
+  [DONE]    Sentry Error Monitoring
+            @sentry/nextjs installed and configured (client + server + edge).
+            Instrumentation hook wired to Next.js App Router.
+            Disabled in dev. Needs NEXT_PUBLIC_SENTRY_DSN in Vercel env vars.
+
+  [DONE]    Content Flagging
+            FlagButton on every DM narration bubble (hover to reveal).
+            Submits reason to /api/flag → inserts into moderation_queue table.
+            Duplicate flags silently accepted.
+
+  [DONE]    Privacy Policy + Terms of Service (/privacy, /terms)
+            app/(legal)/privacy/page.tsx and app/(legal)/terms/page.tsx.
+            Linked from login and register pages.
+
+  [DONE]    Mandatory Coding Standards (AGENTS.md)
+            Rules for future routes: must use parseBody, getAuthenticatedUser,
+            rate limiting, DMErrorBoundary, RLS + indexes on new tables, CSP updates.
+
+  [DONE]    D&D 5e Conditions System
+            Full conditions library: blinded, charmed,
+            exhaustion, frightened, grappled, incapacitated,
+            invisible, paralyzed, petrified, poisoned,
+            prone, restrained, stunned, unconscious.
+            Mechanical effects on attack and defence rolls.
+
+  [PARTIAL] Spell System
+            Spell slots stored in character JSONB, displayed on character sheet.
+            Starting spells auto-populated at character creation per class
+            (lib/dnd5e/spells.ts — getStartingSpells).
+            ~80 spell descriptions in SPELL_DESCRIPTIONS map (visible in sheet).
+            spell_learn game event: DM can add spells mid-adventure via XML tag.
+            Full casting rules (canCastSpell, expendSpellSlot, short/long rest),
+            spell effect resolution, and concentration tracking not yet implemented.
+
+  [PARTIAL] Equipment / Item Mechanics
+            Inventory structure exists with rarity tracking.
+            No stat-modifying item mechanics, no attunement
+            slots, no item use actions in combat.
+
+  [TODO]    Leveling UI Wizard
+            XP thresholds and level data exist in
+            lib/dnd5e/leveling.ts but no UI flow for choosing
+            new features or feats on level-up.
+
+  [TODO]    Feats / Multiclassing
+            No feat selection system or multiclassing logic.
+
+  [TODO]    Visual Map / Encounter Builder
+            World state is text-based only. No grid map or
+            encounter builder UI.
+
+  [TODO]    Character Import / Export
+            No PDF export, D&D Beyond import, or JSON export.
+
+
+────────────────────────────────────────────────────────────────────────────────
+  PROJECT FILE STRUCTURE
+────────────────────────────────────────────────────────────────────────────────
+
+  AgenticDungeonMaster/
+  ├── dnd-platform/                    # Main Next.js app
+  │   ├── app/
+  │   │   ├── (auth)/
+  │   │   │   ├── login/               # Login page (Terms/Privacy links added)
+  │   │   │   └── register/            # Register page (Terms/Privacy links added)
+  │   │   ├── auth/
+  │   │   │   └── callback/            # Supabase email confirmation handler
+  │   │   ├── (game)/
+  │   │   │   ├── dashboard/           # Campaign list
+  │   │   │   ├── campaign/            # Campaign creation
+  │   │   │   ├── play/                # Main game screen
+  │   │   │   └── dm-console/          # Human DM view
+  │   │   ├── (legal)/
+  │   │   │   ├── privacy/             # Privacy Policy (/privacy)
+  │   │   │   └── terms/               # Terms of Service (/terms)
+  │   │   ├── api/
+  │   │   │   ├── dm/                  # AI DM endpoint — Zod + Upstash rate limit
+  │   │   │   ├── dm-console/          # Human DM narrate + AI copilot (Zod)
+  │   │   │   ├── campaign/create/     # Campaign creation (Zod)
+  │   │   │   ├── campaign/join/       # Join by invite code (Zod)
+  │   │   │   ├── campaign/end/        # AI epilogue generation (Zod)
+  │   │   │   ├── campaign/archive/    # Set campaign status = completed (Zod)
+  │   │   │   ├── combat/start/        # Start combat encounter (Zod)
+  │   │   │   ├── combat/action/       # Resolve combat turn (Zod)
+  │   │   │   ├── dice/                # Dice roll endpoint (Zod)
+  │   │   │   └── flag/                # Content flagging → moderation_queue (Zod)
+  │   │   ├── layout.tsx               # Root layout + theming
+  │   │   ├── globals.css
+  │   │   └── page.tsx                 # Home redirect
+  │   ├── components/
+  │   │   ├── character/               # CharacterPanel, CharacterSheet
+  │   │   ├── game/                    # ActionPanel, StoryLog (FlagButton added),
+  │   │   │                            #   InitiativeTracker, DiceLog,
+  │   │   │                            #   CampaignEndModal
+  │   │   ├── dm/                      # DMNarrationInput, AICopilot,
+  │   │   │                            #   DMToolbox, PartyOverview
+  │   │   └── ui/                      # HPBar, XPBar, ManaBar, ToastContainer,
+  │   │                                #   DMErrorBoundary (react-error-boundary)
+  │   ├── lib/
+  │   │   ├── aiTypes.ts               # AI request / response types (+ cachedTokens)
+  │   │   ├── groq.ts                  # Groq API (Llama 3.3 70B + 3.1 8B)
+  │   │   ├── claude.ts                # Anthropic API — prompt caching enabled
+  │   │   ├── validation.ts            # Zod schemas + parseBody() helper (NEW)
+  │   │   ├── upstashRateLimit.ts      # Upstash Redis rate limiter (NEW)
+  │   │   ├── rateLimiter.ts           # In-memory fallback rate limiter
+  │   │   ├── contentRating.ts         # getContentRating(dob) → under16|teen|adult
+  │   │   ├── gameEvents.ts            # XML game-event parser
+  │   │   ├── gameEventApplier.ts      # Apply events to Supabase DB
+  │   │   ├── combatEngine.ts          # D&D 5e combat resolution
+  │   │   ├── dice.ts                  # Dice utilities
+  │   │   ├── systemPrompt.ts          # DM prompt builder (content-rating aware)
+  │   │   ├── worldMemory.ts           # Session summarisation
+  │   │   ├── monsterAI.ts             # Monster tactical decisions
+  │   │   ├── supabase.ts              # Client-side Supabase
+  │   │   ├── supabaseServer.ts        # Server-side Supabase
+  │   │   ├── middleware.ts            # Next.js route protection
+  │   │   └── dnd5e/
+  │   │       ├── abilities.ts         # Modifiers, skills, saving throws
+  │   │       ├── classes.ts           # Fighter, Wizard, Rogue, Cleric... + FEATURE_DESCRIPTIONS
+  │   │       ├── races.ts             # Race definitions + bonuses
+  │   │       ├── conditions.ts        # Condition mechanical effects
+  │   │       ├── leveling.ts          # XP thresholds + level data
+  │   │       ├── monsters.ts          # Monster stat blocks
+  │   │       └── spells.ts            # Starting spells per class + SPELL_DESCRIPTIONS (~80 spells)
+  │   ├── store/
+  │   │   ├── gameStore.ts             # Zustand store (campaign, characters,
+  │   │   │                            #   messages, combat encounter)
+  │   │   └── toastStore.ts            # Zustand toast queue (auto-dismiss 4s)
+  │   ├── types/
+  │   │   ├── character.ts
+  │   │   ├── combat.ts
+  │   │   ├── campaign.ts
+  │   │   ├── message.ts
+  │   │   ├── npc.ts
+  │   │   └── quest.ts
+  │   ├── supabase/migrations/         # 12 SQL migration files (012 adds indexes + moderation_queue)
+  │   ├── instrumentation.ts           # Next.js instrumentation (Sentry server init)
+  │   ├── sentry.client.config.ts      # Sentry browser config
+  │   ├── sentry.server.config.ts      # Sentry Node.js config
+  │   ├── sentry.edge.config.ts        # Sentry Edge runtime config
+  │   ├── vercel.json                  # Security headers + CORS (NEW)
+  │   ├── next.config.ts               # CSP headers + Sentry build plugin
+  │   ├── package.json
+  │   ├── tsconfig.json
+  │   ├── AGENTS.md                    # Coding standards (Zod, auth, RLS, etc.)
+  │   ├── CLAUDE.md
+  │   └── README.md
+  ├── TXT/
+  │   ├── index.txt                    # This file (build status snapshot)
+  │   ├── SESSION_LOG.txt              # Per-session dev log
+  │   ├── IMPLEMENTATION_PLAN.txt      # Phase-by-phase build plan with [DONE]/[TODO]
+  │   ├── PRD.txt                      # Product Requirements Document
+  │   ├── BACKEND_SCHEMA.txt           # Full DB schema reference
+  │   ├── APP_FLOW.txt                 # User journey + navigation map
+  │   └── DESIGN_BRIEF.txt             # Visual/UX design system rules
+  ├── .env.example
+  └── README.md
+
+
+────────────────────────────────────────────────────────────────────────────────
+  DATABASE SCHEMA (Supabase / PostgreSQL)
+  10 migrations applied. RLS enabled on all tables.
+────────────────────────────────────────────────────────────────────────────────
+
+  TABLE: users
+    id, display_name, avatar_url, preferences, date_of_birth, created_at
+    Mirrors Supabase Auth users table.
+    date_of_birth added in migration 011 — drives content rating for DM prompts.
+
+  TABLE: campaigns
+    id, name, setting, dm_mode (ai|human), dm_user_id
+    current_scene, world_state (JSONB), invite_code (unique 8-char)
+    RLS: players see only campaigns they are members of.
+
+  TABLE: campaign_members
+    id, campaign_id, user_id
+    Junction table. RLS: users see their own memberships only.
+
+  TABLE: characters
+    id, campaign_id, user_id, name, race, class, subclass
+    level, xp, hp, max_hp, temp_hp, ac, speed
+    ability_scores (JSONB: str/dex/con/int/wis/cha)
+    skills, saving_throws (JSONB)
+    death_saves (JSONB), conditions (JSONB array)
+    inventory (JSONB), spells (JSONB)
+    features, backstory, portrait_url, is_alive
+    RLS: players see characters in their campaign; can update own.
+
+  TABLE: messages
+    id, campaign_id, character_id, user_id
+    type (narration|player_action|dice_roll|combat_log)
+    content, metadata (JSONB), created_at
+    RLS: players see messages from their campaign only.
+
+  TABLE: npcs
+    id, campaign_id, name, description, disposition
+    location, notes
+    RLS: campaign members can read and update.
+
+  TABLE: quests
+    id, campaign_id, title, description
+    status (active|completed|abandoned)
+    xp_reward, objectives (JSONB)
+
+  TABLE: world_memory_summaries
+    id, campaign_id, summary_type (session)
+    content (150-200 word summary)
+    message_range_start, message_range_end, created_at
+
+  TABLE: combat_encounters
+    id, campaign_id, status (active|completed)
+    round, turn_order (JSONB), current_turn_index
+    monsters (JSONB), loot_table (JSONB)
+
+
+────────────────────────────────────────────────────────────────────────────────
+  API ROUTES
+────────────────────────────────────────────────────────────────────────────────
+
+  POST  /api/dm
+        Main AI DM endpoint. Builds prompt, calls Groq 70B,
+        parses XML events, applies to DB, returns narration.
+
+  POST  /api/dm-console/narrate
+        Human DM submits narration text. Applies game events
+        and broadcasts to all players via Realtime.
+
+  POST  /api/dm-console/assist
+        AI Copilot (Groq) suggests what the human DM should say next.
+        Requires caller to be the campaign's human DM (auth check).
+        Includes last 10 messages as context.
+
+  POST  /api/campaign/join
+        Joins a campaign by invite code. Uses supabaseAdmin to bypass
+        RLS (non-members can't query campaigns directly). Returns
+        campaignId, dmMode, dmUserId, hasCharacter for redirect logic.
+
+  POST  /api/campaign
+        Creates a new campaign with invite code. Adds creator
+        as first campaign member.
+
+  POST  /api/combat/start
+        Spawns named monsters, rolls initiative for all
+        combatants, creates combat_encounters record.
+
+  POST  /api/combat/action
+        Processes a player's combat turn (attack, defend,
+        flee, etc.).
+
+  POST  /api/dice
+        Generic dice roll. Handles standard rolls,
+        advantage/disadvantage, saving throws.
+
+  GET   /auth/callback
+        Supabase email confirmation handler. Exchanges ?code=
+        param for a session, then redirects to /dashboard.
+        Failure falls back to /login?error=auth_callback_failed.
+
+
+────────────────────────────────────────────────────────────────────────────────
+  RECENT COMMIT HISTORY
+────────────────────────────────────────────────────────────────────────────────
+
+  2a293a2  checkpoint (Phase 7: polish, campaign end, toasts, CharacterSheet)
+  438988d  checkpoint (Phase 7: mana bar, rate limiter, 3-column layout)
+  900953b  Replaced old middleware.ts with proxy
+  53e86a6  Merge pull request #3 — main branch merge
+  a1bd6eb  Fixed XP bar updating issue (not reflecting XP gains)
+  d18fe4f  Added XP bar component to character sheet
+  e218bd4  Finished implementing light mode and dark mode
+  609d57a  Initial light mode and dark mode implementation
+  cbeeda5  Improved text box opacity for readability
+  ebbb9e3  Token optimisation: trim messages sent to AI
+  78b9f02  Character sheet updates regularly to reflect changes
+  ee52858  DiceLog shows most recent rolls first + summaries
+  8be81ca  Added left sidebar for dice roll history
+  5ae8b07  Merge pull request #2
+  bd6b2a8  Fixed game screen layout (story log & sidebar display)
+  d31efeb  Merge pull request #1
+  bf7a935  Refactor + RLS recursion error fix (PL/pgSQL)
+  c7c7fdf  Human DM console + AI Copilot (Claude Haiku)
+  ca12049  Campaign creation, character creation, dashboard, auth
+  5e9c10e  Game table, character sheet, story log, initiative tracker
+  74406b0  Combat engine, conditions, monster AI, combat API routes
+  98af0e0  DM engine, game events, world memory, API routes (initial)
+
+
+────────────────────────────────────────────────────────────────────────────────
+  OPEN WORK ITEMS
+────────────────────────────────────────────────────────────────────────────────
+
+  [MEDIUM]  Full Spell Casting System
+            Starting spells populate at character creation. ~80 spell descriptions
+            shown in character sheet. spell_learn event lets DM teach new spells.
+            Still needed: canCastSpell, expendSpellSlot, shortRest, longRest,
+            spell effect resolution (damage, healing, conditions), concentration.
+
+  [MEDIUM]  Item / Equipment Mechanics
+            Equipping weapons and armour (AC modification),
+            consumables (potions), attunement slots, item use
+            actions in combat.
+
+  [LOW]     Level-Up UI Wizard
+            On reaching XP threshold, show level-up flow:
+            choose ASI or feat, unlock class features, update
+            spell slots. Logic exists in lib/dnd5e/leveling.ts.
+
+  [LOW]     DM Advanced Tool Panels
+            NPC manager, quest tracker, monster lookup,
+            encounter builder — remaining from Phase 6.
+
+  [LOW]     Session Log Page
+            /campaign/[id]/sessions — chronological session summaries
+            with export-as-text option.
+
+  [LOW]     Feats & Multiclassing
+            Feat selection at ASI levels. Multiclassing
+            prerequisites and spell slot merging.
+
+  [LOW]     Visual Map / Encounter Builder
+            Grid-based encounter map for combat.
+            (Text-only approach is fully playable without this.)
+
+  [LOW]     Character Export
+            Download character sheet as PDF or JSON.
+
+
+────────────────────────────────────────────────────────────────────────────────
+  ARCHITECTURE NOTES
+────────────────────────────────────────────────────────────────────────────────
+
+  AI PIPELINE — AI DM mode
+    Player action
+      → /api/dm  (checks campaign.dm_mode; if 'human', saves player_action and returns early)
+      → systemPrompt.ts builds context from DB
+        (campaign, characters, NPCs, quests, world memory)
+      → Groq Llama 3.3 70B returns narration + embedded XML
+      → gameEvents.ts parses XML tags
+      → gameEventApplier.ts writes to Supabase
+      → message broadcast via Supabase Realtime
+      → all clients update via Zustand store
+
+  AI PIPELINE — Human DM mode
+    Player action
+      → /api/dm  → saves player_action only, returns { queued: true }
+      → DM reads player message in their DM Console story log
+      → DM optionally clicks AI Copilot → /api/dm-console/assist (Groq)
+          returns suggestion with recent message context
+      → DM edits suggestion or writes own narration
+      → POST /api/dm-console/narrate  → saves narration, applies game events
+      → broadcast via Realtime to all players
+
+  CONTEXT MANAGEMENT
+    Only the last 6 messages are sent to Groq per request.
+    Every 20 narration messages, Llama 3.1 8B Instant generates
+    a 150-200 word session summary stored in world_memory_summaries.
+    These summaries are prepended to future prompts, giving the DM
+    long-term memory without blowing the context window.
+
+  SECURITY
+    Row Level Security on every table.
+    All queries scoped to auth.uid().
+    Service role key only used server-side in supabaseServer.ts.
+    RLS recursion on campaign_members fixed via PL/pgSQL
+    function in migration 9.
+
+  STATE MANAGEMENT
+    Zustand store (gameStore.ts) holds client-side state:
+    campaign, characters, messages, current encounter.
+    Supabase Realtime subscriptions push server changes into
+    the store. No polling — all updates are event-driven.
+
+================================================================================

@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { rollDice, rollWithAdvantage, rollWithDisadvantage } from '@/lib/dice'
+import { parseBody, DiceSchema } from '@/lib/validation'
 
 export async function POST(req: NextRequest) {
   try {
-    const { notation, advantage, disadvantage } = await req.json()
+    const body = await parseBody(req, DiceSchema)
+    if (body instanceof NextResponse) return body
+    const { notation, advantage, disadvantage } = body
 
     if (advantage) {
       const result = rollWithAdvantage()

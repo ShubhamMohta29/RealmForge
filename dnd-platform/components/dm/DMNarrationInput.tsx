@@ -4,17 +4,23 @@ import { useState } from 'react'
 export interface DMNarrationInputProps {
   campaignId: string
   characters: { id: string; name: string }[]
+  draft?: string
+  onDraftChange?: (text: string) => void
 }
 
-export const DMNarrationInput = ({ campaignId, characters }: DMNarrationInputProps) => {
+export const DMNarrationInput = ({ campaignId, characters, draft, onDraftChange }: DMNarrationInputProps) => {
   const [content, setContent]           = useState('')
+
+  // Sync external draft (from AI Copilot) into the textarea
+  const externalContent = draft !== undefined ? draft : content
+  const setExternalContent = onDraftChange ?? setContent
   const [whisperTarget, setWhisperTarget] = useState('')
   const [loading, setLoading]           = useState(false)
   const [sent, setSent]                 = useState(false)
   const [error, setError]               = useState('')
 
   async function handleSend() {
-    if (!content.trim()) return
+    if (!externalContent.trim()) return
     setLoading(true)
     setError('')
 
@@ -24,7 +30,7 @@ export const DMNarrationInput = ({ campaignId, characters }: DMNarrationInputPro
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           campaignId,
-          content: content.trim(),
+          content: externalContent.trim(),
           targetCharacterId: whisperTarget || null
         })
       })
@@ -33,7 +39,7 @@ export const DMNarrationInput = ({ campaignId, characters }: DMNarrationInputPro
         throw new Error('Failed to send narration')
       }
 
-      setContent('')
+      setExternalContent('')
       setWhisperTarget('')
       setSent(true)
       setTimeout(() => setSent(false), 2000)
@@ -51,8 +57,8 @@ export const DMNarrationInput = ({ campaignId, characters }: DMNarrationInputPro
       </p>
 
       <textarea
-        value={content}
-        onChange={e => setContent(e.target.value)}
+        value={externalContent}
+        onChange={e => setExternalContent(e.target.value)}
         placeholder="Type your narration here... Players will see this in their story log."
         rows={4}
         className="w-full text-sm px-3 py-2 border border-white/10 rounded-lg bg-white/5 dark:bg-black/20 text-white placeholder-gray-500 focus:outline-none focus:border-amber-highlight resize-none"
@@ -74,7 +80,7 @@ export const DMNarrationInput = ({ campaignId, characters }: DMNarrationInputPro
 
         <button
           onClick={handleSend}
-          disabled={loading || !content.trim()}
+          disabled={loading || !externalContent.trim()}
           className="px-4 py-2 text-sm btn-amber rounded-lg disabled:opacity-50 transition-colors"
         >
           {sent ? '✓ Sent' : loading ? 'Sending...' : 'Send'}

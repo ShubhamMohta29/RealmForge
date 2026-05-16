@@ -3,10 +3,6 @@ import type { Campaign } from '@/types/campaign'
 import type { Character } from '@/types/character'
 import type { Message } from '@/types/message'
 import type { CombatEncounter } from '@/types/combat'
-import type { RollRequest } from '@/lib/gameEvents'
-
-export type { RollRequest } from '@/lib/gameEvents'
-
 interface GameStore {
   campaign: Campaign | null
   characters: Character[]
@@ -15,7 +11,6 @@ interface GameStore {
   encounter: CombatEncounter | null
   isLoading: boolean
   isDMThinking: boolean
-  pendingRollRequest: RollRequest | null
 
   setCampaign: (campaign: Campaign) => void
   setCharacters: (characters: Character[]) => void
@@ -26,7 +21,6 @@ interface GameStore {
   updateCharacter: (characterId: string, updates: Partial<Character>) => void
   setLoading: (loading: boolean) => void
   setDMThinking: (thinking: boolean) => void
-  setPendingRollRequest: (roll: RollRequest | null) => void
 }
 
 export const useGameStore = create<GameStore>((set) => ({
@@ -37,7 +31,6 @@ export const useGameStore = create<GameStore>((set) => ({
   encounter: null,
   isLoading: false,
   isDMThinking: false,
-  pendingRollRequest: null,
 
   setCampaign: (campaign) => set({ campaign }),
   setCharacters: (characters) => set({ characters }),
@@ -55,5 +48,4 @@ export const useGameStore = create<GameStore>((set) => ({
   })),
   setLoading: (isLoading) => set({ isLoading }),
   setDMThinking: (isDMThinking) => set({ isDMThinking }),
-  setPendingRollRequest: (pendingRollRequest) => set({ pendingRollRequest })
 }))

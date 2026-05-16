@@ -5,23 +5,27 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 
 export default function RegisterPage() {
-  const [email, setEmail]       = useState('')
-  const [password, setPassword] = useState('')
-  const [name, setName]         = useState('')
-  const [error, setError]       = useState('')
-  const [loading, setLoading]   = useState(false)
-  const [emailSent, setEmailSent] = useState(false)
+  const [email, setEmail]           = useState('')
+  const [password, setPassword]     = useState('')
+  const [name, setName]             = useState('')
+  const [dateOfBirth, setDateOfBirth] = useState('')
+  const [error, setError]           = useState('')
+  const [loading, setLoading]       = useState(false)
+  const [emailSent, setEmailSent]   = useState(false)
   const router = useRouter()
 
   async function handleRegister() {
-    if (!email || !password || !name) return
+    if (!email || !password || !name || !dateOfBirth) return
     setLoading(true)
     setError('')
 
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { display_name: name } }
+      options: {
+        data: { display_name: name, date_of_birth: dateOfBirth },
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
     })
 
     if (error) {
@@ -70,13 +74,24 @@ export default function RegisterPage() {
                 type="password"
                 className="w-full px-4 py-2.5 border border-white/10 rounded-xl bg-white/5 dark:bg-black/20 text-white placeholder:text-gray-500 focus:outline-none focus:border-amber-highlight"
               />
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Date of birth</label>
+                <input
+                  value={dateOfBirth}
+                  onChange={e => setDateOfBirth(e.target.value)}
+                  type="date"
+                  max={new Date().toISOString().split('T')[0]}
+                  className="w-full px-4 py-2.5 border border-white/10 rounded-xl bg-white/5 dark:bg-black/20 text-white focus:outline-none focus:border-amber-highlight [color-scheme:dark]"
+                />
+                <p className="text-xs text-gray-500 mt-1">Used to set appropriate content for your age group.</p>
+              </div>
             </div>
 
             {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
 
             <button
               onClick={handleRegister}
-              disabled={loading || !email || !password || !name}
+              disabled={loading || !email || !password || !name || !dateOfBirth}
               className="w-full btn-amber disabled:opacity-50 font-medium rounded-xl py-3 transition-colors mb-3"
             >
               {loading ? 'Creating...' : 'Create account'}
@@ -85,6 +100,13 @@ export default function RegisterPage() {
             <p className="text-sm text-center text-gray-400">
               Already have an account?{' '}
               <Link href="/login" className="text-amber-highlight hover:underline">Sign in</Link>
+            </p>
+
+            <p className="text-[10px] text-center text-gray-600 mt-4">
+              By creating an account you agree to our{' '}
+              <Link href="/terms" className="underline hover:text-gray-400">Terms</Link>
+              {' '}and{' '}
+              <Link href="/privacy" className="underline hover:text-gray-400">Privacy Policy</Link>
             </p>
           </>
         )}

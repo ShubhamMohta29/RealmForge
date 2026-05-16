@@ -1,3 +1,8 @@
+import { Character } from '@/types/character'
+import { getSkillModifier, getSavingThrowModifier, getModifier } from './dnd5e/abilities'
+import { RollRequest } from './gameEvents'
+import { DiceRollMetadata } from '@/types/message'
+
 export interface DiceRoll {
   rolls: number[]
   modifier: number
@@ -30,6 +35,51 @@ export function rollDice(notation: string): DiceRoll {
     modifier,
     total: rolls.reduce((a, b) => a + b, 0) + modifier,
     notation
+  }
+}
+
+export function resolveRollRequest(request: RollRequest, character: Character): DiceRollMetadata {
+  let modifier = 0
+  let label = ""
+
+  switch (request.type) {
+    case 'skill':
+      if (request.skill) {
+        modifier = getSkillModifier(character, request.skill.toLowerCase().replace(/ /g, '_'))
+        label = `${request.skill} Check`
+      }
+      break
+    case 'saving_throw':
+      if (request.ability) {
+        modifier = getSavingThrowModifier(character, request.ability.toLowerCase())
+        label = `${request.ability} Saving Throw`
+      }
+      break
+    case 'ability':
+      if (request.ability) {
+        modifier = getModifier(character.ability_scores[request.ability.toLowerCase() as keyof typeof character.ability_scores] || 10)
+        label = `${request.ability} Check`
+      }
+      break
+    case 'attack':
+      // Basic attack roll for now
+      modifier = getModifier(character.ability_scores.str) + character.proficiency_bonus
+      label = "Attack Roll"
+      break
+  }
+
+  const d20 = Math.floor(Math.random() * 20) + 1
+  const total = d20 + modifier
+
+  return {
+    notation: '1d20',
+    rolls: [d20],
+    modifier,
+    total,
+    dc: request.dc,
+    success: request.dc ? total >= request.dc : undefined,
+    skill: request.skill || request.ability || label,
+    purpose: request.reason || label
   }
 }
 

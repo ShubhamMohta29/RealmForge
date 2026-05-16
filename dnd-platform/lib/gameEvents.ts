@@ -10,7 +10,14 @@ export type GameEventType =
   | 'loot'
   | 'condition_add'
   | 'condition_remove'
+  | 'inventory_add'
+  | 'inventory_remove'
+  | 'feature_add'
+  | 'ability_update'
+  | 'skill_update'
+  | 'rest'
   | 'roll_request'
+  | 'spell_learn'
 
 export interface GameEvent {
   type: GameEventType
@@ -24,6 +31,7 @@ export interface RollRequest {
   ability?: string
   dc?: number
   target?: string
+  reason?: string
 }
 
 export interface ParsedResponse {
@@ -37,7 +45,7 @@ export function parseGameEvents(raw: string): ParsedResponse {
   const rollRequests: RollRequest[] = []
 
   // Extract all XML-style game event tags
-  const tagRegex = /<(game_event|roll_request|scene_update|new_npc|quest_update|new_quest|start_combat|loot)\s([^/]*?)\/>/g
+  const tagRegex = /<(game_event|roll_request|scene_update|new_npc|quest_update|new_quest|start_combat|loot|spell_learn)\s([^/]*?)\/>/g
 
   let match
   while ((match = tagRegex.exec(raw)) !== null) {
@@ -59,7 +67,8 @@ export function parseGameEvents(raw: string): ParsedResponse {
         skill: attrs.skill,
         ability: attrs.ability,
         dc: attrs.dc ? parseInt(attrs.dc) : undefined,
-        target: attrs.target
+        target: attrs.target,
+        reason: attrs.reason
       })
     } else if (tagName === 'game_event') {
       events.push({

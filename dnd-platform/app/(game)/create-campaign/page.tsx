@@ -41,7 +41,9 @@ export default function CreateCampaignPage() {
     return
   }
 
-  router.push(`/campaign/${data.campaign.id}/create-character`)
+  router.push(dmMode === 'human'
+    ? `/campaign/${data.campaign.id}/dm-console`
+    : `/campaign/${data.campaign.id}/create-character`)
 }
 
   return (

@@ -1,10 +1,11 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { CLASSES } from '@/lib/dnd5e/classes'
+import { CLASSES, FEATURE_DESCRIPTIONS } from '@/lib/dnd5e/classes'
 import { RACES } from '@/lib/dnd5e/races'
 import { calculateMaxHp, getSpellSlots } from '@/lib/dnd5e/leveling'
+import { getStartingSpells } from '@/lib/dnd5e/spells'
 import { getProficiencyBonus, getModifier } from '@/lib/dnd5e/abilities'
 
 const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8]
@@ -14,6 +15,22 @@ export default function CreateCharacterPage() {
   const params = useParams()
   const router = useRouter()
   const campaignId = params.id as string
+
+  useEffect(() => {
+    async function checkDmAccess() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data: campaign } = await supabase
+        .from('campaigns')
+        .select('dm_mode, dm_user_id')
+        .eq('id', campaignId)
+        .single()
+      if (campaign?.dm_mode === 'human' && campaign?.dm_user_id === user.id) {
+        router.replace(`/campaign/${campaignId}/dm-console`)
+      }
+    }
+    checkDmAccess()
+  }, [campaignId, router])
 
   const [step, setStep]           = useState(1)
   const [name, setName]           = useState('')
@@ -89,14 +106,14 @@ export default function CreateCharacterPage() {
       conditions: [],
       inventory: [],
       spells: {
-        known: [],
+        known: getStartingSpells(cls),
         prepared: [],
         slots: spellSlots,
         slot_max: spellSlots
       },
       features: (classDef?.features[1] || []).map((f: string) => ({
         name: f,
-        description: `${f} — a class feature of the ${cls}.`
+        description: FEATURE_DESCRIPTIONS[f] ?? `A class feature of the ${cls}.`
       })),
       backstory: '',
       notes: ''

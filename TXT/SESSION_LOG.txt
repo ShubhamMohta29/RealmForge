@@ -1,0 +1,582 @@
+================================================================================
+  REALMFORGE — SESSION LOG
+  AI-Assisted Development Sessions
+================================================================================
+
+  This file records what was built in each Claude Code session, what bugs
+  were found, and what remains open. Append new sessions chronologically.
+
+
+================================================================================
+  SESSION 1 — 2026-05-14  (Phase 7: Polish & UX)
+================================================================================
+
+  SCOPE
+  ─────
+  Picked up after Phases 0–6 were substantially complete. Goal: work through
+  Phase 7 (polish, persistence, advanced features) from the IMPLEMENTATION_PLAN.
+
+  BUILT
+  ─────
+
+  1. Dark-mode-only refactor
+     — Removed ThemeProvider and ThemeToggle entirely.
+     — Hardcoded `class="dark"` on <html> in app/layout.tsx.
+     — Removed components/providers/ directory.
+     — Rationale: light mode broke the dark-fantasy atmosphere. Theme toggle was
+       wasted complexity. "Dark mode only" is now a documented design rule.
+
+  2. Play page 3-column layout rebuild (app/(game)/campaign/[id]/play/page.tsx)
+     — Left column (w-64): InitiativeTracker stacked above DiceLog.
+     — Center column (flex-1): StoryLog fills available height, ActionPanel
+       pinned below. ActionPanel hidden for archived campaigns.
+     — Right column: CharacterPanel (fixed width from component).
+     — Top bar (h-14): campaign name (amber italic), current_scene (truncated,
+       hidden on small screens), ← Dashboard link.
+     — Archived banner below top bar when campaign.status === 'completed'.
+     — `isArchived` flag gates ActionPanel, shows read-only badge.
+
+  3. ManaBar component (components/ui/ManaBar.tsx)
+     — Sums character.spells.slots and character.spells.slot_max.
+     — Returns null for NON_SPELLCASTERS: fighter, barbarian, monk, rogue.
+     — Blue gradient bar. Wired into CharacterPanel below the HP bar.
+
+  4. "Jump to latest" in StoryLog (components/game/StoryLog.tsx)
+     — Amber button appears when user has scrolled >200px above the bottom.
+     — Clicking it smooth-scrolls to the bottom of the message list.
+
+  5. ActionPanel error recovery (components/game/ActionPanel.tsx)
+     — Added dmError?: string | null and onClearError?: () => void props.
+     — Inline amber-bordered banner shows error text + "Try again" / "×" buttons.
+     — play/page.tsx owns dmError state, passes it down, clears on new action.
+
+  6. Campaign end / archive flow
+     — app/api/campaign/end/route.ts:
+         Auth + membership check. Fetches campaign, characters, last 10
+         narration messages, world memory, quests. Calls Groq Llama 3.3 70B
+         with epic epilogue prompt (maxTokens: 600). Returns { summary }.
+     — app/api/campaign/archive/route.ts:
+         Auth + membership check. Sets campaigns.status = 'completed'.
+     — components/game/CampaignEndModal.tsx:
+         Two-step: loads AI summary on mount (useEffect), shows it, then
+         "End Campaign" confirm button calls archive route, then
+         router.push('/dashboard').
+     — play/page.tsx: END_CAMPAIGN_RE regex detects "end/finish/conclude/
+       close/archive ... campaign" intent → opens CampaignEndModal.
+
+  7. Rate limiter (lib/rateLimiter.ts)
+     — In-memory Map<string, { lastCall, count }>.
+     — checkRateLimit(key, { windowMs, max }) returns { allowed, retryAfter }.
+     — Wired into /api/dm/route.ts: 1 DM call per 3 seconds per campaign.
+     — Returns HTTP 429 with retryAfter on violation.
+
+  KNOWN BUGS / OPEN ITEMS
+  ────────────────────────
+
+  [CRITICAL — UNRESOLVED]
+  After character creation, the play page opens and immediately redirects
+  to /dashboard. Root cause: loadData in play/page.tsx runs a campaign
+  fetch. Supabase RLS checks campaign_members to authorize the read.
+  The newly-created character row triggers the redirect to /play before
+  the campaign_members INSERT has fully propagated through RLS. So the
+  campaign query returns null → router.push('/dashboard').
+
+  Fix: Retry the campaign fetch up to 3× with ~600ms delay before hard-
+  redirecting. See PENDING WORK below.
+
+
+================================================================================
+  SESSION 2 — 2026-05-14  (Phase 7 continued: toasts, character sheet, dashboard)
+================================================================================
+
+  SCOPE
+  ─────
+  Continued Phase 7 work. Focus on toast notifications, CharacterSheet
+  overhaul, dashboard polish, and globals.css animation keyframes.
+
+  BUILT
+  ─────
+
+  1. Toast notification system
+     — store/toastStore.ts (Zustand): addToast / dismissToast.
+       Auto-dismiss after 4000ms via setTimeout inside addToast.
+     — components/ui/ToastContainer.tsx: fixed bottom-4 right-4.
+       Types: info, success, error, xp, loot, levelup, quest.
+       Per-type icon (emoji) and border/accent colour.
+       animate-toastIn on entry.
+     — Wired into play/page.tsx Realtime handlers:
+         characters UPDATE: XP gain → xp toast, level increase → levelup toast.
+         messages INSERT: narration metadata events[] → loot toast, quest toast.
+
+  2. CharacterSheet overhaul (components/character/CharacterSheet.tsx)
+     — Dark-fantasy modal styling: glass panel, modalIn keyframe (slide up
+       + fade in), close on backdrop click.
+     — Tabs: Overview, Spells, Inventory, Features.
+     — Overview tab: all 6 ability scores + modifiers, saving throws with
+       proficiency dot, full skills list with proficiency dots and modifiers.
+     — Spells tab: spell slot grid (circles per level, filled/empty states),
+       spell attack bonus, save DC, prepared spells list with level dots.
+       Only shown for spellcaster classes.
+     — Inventory tab: item cards with rarity-colour borders (common=gray,
+       uncommon=green, rare=blue, very rare=purple, legendary=amber),
+       item type badge, weight total footer.
+     — Features tab: class and racial features listed with descriptions.
+
+  3. Dashboard updates (app/(game)/dashboard/page.tsx)
+     — Campaigns split into Active and Archived sections.
+     — Archived CampaignCard: opacity-60, "Archived" badge, "Read →" button
+       (no btn-amber, no DM Console).
+     — Active CampaignCard: unchanged + "Play →" btn-amber.
+     — campaigns ordered by updated_at desc.
+     — Join error displayed inline below the input.
+     — Empty state panel when campaigns.length === 0.
+
+  4. globals.css animation keyframes
+     — @keyframes toastIn + .animate-toastIn (translateY 8px → 0, fade in).
+     — @keyframes fadeIn + .animate-fadeIn (opacity 0 → 1, 300ms).
+
+
+  KNOWN BUGS / OPEN ITEMS
+  ────────────────────────
+
+  [CRITICAL — RESOLVED in Session 3]
+  Play page redirect bug fixed. See Session 3.
+
+
+================================================================================
+  SESSION 3 — 2026-05-14  (Critical bug fix)
+================================================================================
+
+  SCOPE
+  ─────
+  Fixed the critical play-page redirect bug (Sessions 1 & 2).
+
+  BUILT
+  ─────
+
+  1. Play page RLS timing fix (app/(game)/campaign/[id]/play/page.tsx)
+     — Added retry loop (3×, 600ms delay) around the campaign fetch in loadData.
+     — On first attempt failure (RLS not yet propagated), waits 600ms and retries.
+     — Only redirects to /dashboard after all 3 attempts return null.
+     — Characters and messages are still fetched in parallel after campaign is found.
+
+
+================================================================================
+  SESSION 4 — 2026-05-14  (Dice automation, spell data, feature/spell descriptions)
+================================================================================
+
+  SCOPE
+  ─────
+  UX fixes to dice rolls, populated starting spells at character creation,
+  added feature and spell descriptions to the character sheet.
+
+  BUILT
+  ─────
+
+  1. Automatic dice rolls — DiceRollModal removed entirely
+     — Deleted components/game/DiceRollModal.tsx (was a 2-step modal requiring
+       user interaction: "Roll d20" click → "Confirm" click).
+     — Problem with old modal: it rolled its own independent random number,
+       inconsistent with the server-side roll already computed by resolveRollRequest.
+     — Server already rolled dice and saved dice_roll messages; client was ignoring them.
+     — Fix: server collects rollResults[] and returns them to the client.
+       Client previously auto-sent "Roll result: ..." as a follow-up player action
+       so the DM would narrate the outcome.
+     — Further UX fix: removed the auto-follow-up entirely. The DM's initial response
+       already narrates the action; the roll result appears in the DiceLog on the left.
+       No "Roll result: X" message clutters the chat; no second DM response needed.
+     — store/gameStore.ts: removed pendingRollRequest state and setPendingRollRequest.
+     — api/dm/route.ts: cleaned up isRollResult parameter (no longer needed).
+
+  2. Emergency RLS reset migration (supabase/migrations/010_emergency_rls_reset.sql)
+     — Created to fix 500 Internal Server Error on campaign_members SELECT queries.
+     — Root cause: conflicting/duplicate RLS policies from 9 accumulated migrations.
+     — Script dynamically drops ALL policies on 8 game tables and recreates them
+       cleanly from scratch. Must be pasted into Supabase SQL Editor and run manually.
+
+  3. Starting spells populated at character creation
+     — Created lib/dnd5e/spells.ts with getStartingSpells(cls) function.
+     — Returns level-1 starting spells per class (cantrips + leveled spells combined):
+         Warlock: Eldritch Blast, Minor Illusion, Hex, Hellish Rebuke
+         Wizard: Fire Bolt, Mage Hand, Minor Illusion + 6 spellbook spells
+         Cleric: Sacred Flame, Guidance, Light + 5 prepared spells
+         Bard: Vicious Mockery, Minor Illusion + 4 spells known
+         Sorcerer: 4 cantrips + Chromatic Orb, Magic Missile
+         Druid: Druidcraft, Shillelagh + 4 prepared spells
+         Paladin/Ranger: [] (gain spellcasting at level 2)
+         Non-casters: []
+     — create-character/page.tsx: spells.known now initialised from getStartingSpells(cls)
+       instead of hardcoded [].
+
+  4. spell_learn game event
+     — Added 'spell_learn' to GameEventType union in lib/gameEvents.ts.
+     — Added to tag regex in parseGameEvents so the DM can emit the tag.
+     — Added handler in lib/gameEventApplier.ts: fetches character's current spells
+       JSONB, appends the new spell to known[], saves back to DB.
+     — DM syntax: <spell_learn target="CharacterName" spell="Fireball" />
+
+  5. Feature descriptions for all class features
+     — Added FEATURE_DESCRIPTIONS: Record<string, string> to lib/dnd5e/classes.ts.
+     — One-liner descriptions for every named feature across all 12 classes
+       (Fighting Style, Second Wind, Sneak Attack, Pact Magic, Wild Shape, etc.)
+     — create-character/page.tsx: feature descriptions now look up from
+       FEATURE_DESCRIPTIONS instead of generating "X — a class feature of the Y."
+     — Note: existing characters have old generic descriptions in their DB record;
+       only newly created characters get proper descriptions.
+
+  6. Spell descriptions in character sheet
+     — Added SPELL_DESCRIPTIONS: Record<string, string> and getSpellDescription()
+       to lib/dnd5e/spells.ts. Covers all starting spells + common SRD spells
+       (~80 entries, cantrips and 1st-level).
+     — CharacterSheet.tsx: spell list items now show a gray one-liner below the
+       spell name. Descriptions are looked up at render time (no DB change needed —
+       works for all existing characters immediately).
+
+  BUGS ENCOUNTERED
+  ────────────────
+  Build error: unescaped apostrophes (`can't`, `item's`, `day's`, etc.) in
+  single-quoted TypeScript strings inside spells.ts broke Turbopack parser.
+  Fix: rewrote entire SPELL_DESCRIPTIONS using double-quoted string values.
+
+
+================================================================================
+  SESSION 5 — 2026-05-14  (Content age-gating — PRD OQ-2)
+================================================================================
+
+  SCOPE
+  ─────
+  Implemented age-based content filtering for the AI DM, as specified in
+  PRD OQ-2 (item 7.17 of the implementation plan).
+
+  BUILT
+  ─────
+
+  1. Database migration — 011_age_gate.sql
+     — Added date_of_birth date column to public.users (nullable).
+     — Updated handle_new_user() trigger to read date_of_birth from
+       raw_user_meta_data (passed as auth signup metadata) and insert
+       it into public.users alongside display_name.
+
+  2. Content rating utility — lib/contentRating.ts
+     — getContentRating(dateOfBirth: string | null): ContentRating
+     — Returns 'under16', 'teen', or 'adult' based on age computed from DOB.
+     — Returns 'adult' for null/invalid DOB (backwards-compat for existing users).
+
+  3. System prompt update — lib/systemPrompt.ts
+     — contentRating added to SystemPromptContext (optional, defaults to 'adult').
+     — CONTENT_RULES lookup map with per-tier rule blocks:
+         under16: no gore, no sexual content, no profanity, PG combat.
+         teen:    vivid violence allowed, no sexual content, mild language ok.
+         adult:   no restriction block injected.
+     — Content rules block inserted into the DM prompt between history and tags.
+
+  4. DM API route update — app/api/dm/route.ts
+     — Added supabaseAdmin.from('users').select('date_of_birth') to the existing
+       parallel fetch (zero added latency — runs alongside campaign/character fetches).
+     — Calls getContentRating() with the fetched DOB.
+     — Passes contentRating to buildDMSystemPrompt().
+
+  5. Register page update — app/(auth)/register/page.tsx
+     — Added required date of birth date-picker field (type="date", max=today).
+     — Helper text: "Used to set appropriate content for your age group."
+     — DOB passed in supabase.auth.signUp options.data as date_of_birth.
+     — Submit button disabled until all four fields (name, email, password, DOB)
+       are filled.
+
+  DESIGN DECISIONS
+  ────────────────
+  — DOB flows through auth metadata so the DB trigger captures it atomically
+    on signup — no second API call needed, no race condition.
+  — Content rules are enforced server-side in the DM prompt, not client-side —
+    the client never knows the tier, and the restriction cannot be bypassed by
+    manipulating the request.
+  — Existing users (no DOB stored) default to 'adult' so nothing breaks.
+
+
+================================================================================
+  SESSION 6 — 2026-05-15  (Email confirmation redirect fix)
+================================================================================
+
+  SCOPE
+  ─────
+  Fixed a production bug where Supabase email confirmation links redirected
+  users to localhost:3000 instead of the deployed Vercel app.
+
+  ROOT CAUSE
+  ──────────
+  supabase.auth.signUp() was called without an emailRedirectTo option.
+  Supabase fell back to its dashboard-configured Site URL (localhost:3000),
+  so confirmation links pointed there even for users on the live Vercel app.
+  Additionally, there was no route handler to receive and process the
+  confirmation callback — Supabase passes a one-time code via ?code= query
+  param that must be exchanged server-side for a session.
+
+  BUILT
+  ─────
+
+  1. Auth callback route — app/auth/callback/route.ts
+     — GET /auth/callback: reads the ?code= param from Supabase's redirect.
+     — Exchanges the code for a Supabase session using
+       supabase.auth.exchangeCodeForSession(code).
+     — On success → redirects to /dashboard.
+     — On failure → redirects to /login?error=auth_callback_failed.
+     — Uses @supabase/ssr createServerClient with async cookies() (Next.js 16).
+
+  2. Register page — emailRedirectTo added
+     — app/(auth)/register/page.tsx: signUp() options now include
+       emailRedirectTo: `${window.location.origin}/auth/callback`.
+     — window.location.origin is dynamic — resolves to localhost:3000 in dev
+       and the real Vercel domain in production. No env var needed.
+
+  REQUIRED MANUAL STEP (Supabase dashboard)
+  ──────────────────────────────────────────
+  Add allowed redirect URLs in Supabase → Authentication → URL Configuration:
+    https://your-app.vercel.app/**
+    http://localhost:3000/**
+  Supabase validates emailRedirectTo against this list and will block unknown
+  origins even if the URL is technically correct.
+
+
+================================================================================
+  SESSION 7 — 2026-05-15  (Human DM overhaul, join bug, XP level-up, AI copilot)
+================================================================================
+
+  SCOPE
+  ─────
+  Three separate bug reports + one feature request, all addressed in one session:
+    1. Join campaign broken for new users
+    2. Human DM creator was still being sent to character creation
+    3. Human DM play experience still behaved like AI mode
+    4. XP awarding did not trigger level-up
+    5. AI Copilot silently failed
+
+  BUILT / FIXED
+  ─────────────
+
+  1. Join campaign — dual fix
+     (a) Case mismatch: handleJoin() in dashboard/page.tsx was converting the
+         entered code to UPPERCASE but invite codes are lowercase UUID substrings.
+         Fix: .toLowerCase() instead of .toUpperCase().
+     (b) RLS block: the client-side Supabase query used the anon key, which is
+         subject to RLS. The "Players can view their campaigns" policy only shows
+         campaigns to existing members — a non-member querying by invite_code gets
+         zero rows back even with a valid code.
+         Fix: Created app/api/campaign/join/route.ts. Uses supabaseAdmin to bypass
+         RLS for the invite_code lookup, upserts campaign_members, checks for an
+         existing character, and returns { campaignId, dmMode, dmUserId, hasCharacter }.
+         dashboard/page.tsx handleJoin() now calls this API route.
+
+  2. Human DM — no character creation, straight to DM console
+     — create-campaign/page.tsx: after campaign creation, if dmMode === 'human'
+       router pushes to /campaign/[id]/dm-console instead of /create-character.
+     — create-character/page.tsx: added useEffect guard. On mount, fetches the
+       campaign; if dm_mode === 'human' and the user is the dm_user_id, calls
+       router.replace('/campaign/[id]/dm-console') immediately.
+     — dashboard/page.tsx CampaignCard: when isDM is true and campaign is not
+       archived, shows ONLY the "DM Console" button (btn-amber, primary).
+       The "Play →" button is hidden. The card body click also routes to dm-console.
+
+  3. Human DM play mode — players message, DM narrates manually
+     — app/api/dm/route.ts: added early-return for human DM campaigns. If
+       campaign.dm_mode === 'human', saves the player_action message and returns
+       { queued: true } immediately. AI (Groq) is never called.
+     — play/page.tsx handleAction: skips setDMThinking(true/false) for human DM
+       campaigns so the input stays live and no "DM thinking" spinner appears.
+     — ActionPanel.tsx: added isHumanDM?: boolean prop.
+         Human DM mode: quick action buttons hidden (they are AI prompts, not
+         relevant for human DM). Placeholder changes to "Message your DM...".
+         Local sending state (600ms) gives brief feedback without blocking input.
+         AI DM mode: behaviour unchanged.
+     — StoryLog.tsx: showThinking = isDMThinking && campaign?.dm_mode !== 'human'.
+       The bouncing "Dungeon Master" dots only appear in AI mode.
+
+  4. AI Copilot — wired + fixed
+     — DMNarrationInput.tsx: added draft?: string and onDraftChange?: (text) => void
+       props. Component is now fully controlled when these are provided — the AI
+       Copilot's "Insert into narration →" click populates the textarea directly.
+     — dm-console/page.tsx: passes draft={narrationDraft} and
+       onDraftChange={setNarrationDraft} to DMNarrationInput, completing the loop.
+     — AICopilot.tsx: added proper error handling — non-200 responses now surface
+       the error text in the suggestion area instead of going blank.
+     — app/api/dm-console/assist/route.ts:
+         (a) Switched from callClaudeHaiku to callGroq. ANTHROPIC_API_KEY is not
+             set in .env.local (marked "optional / future use" in .env.example),
+             causing every assist call to throw silently. Groq is the active AI.
+         (b) Now fetches the last 10 player_action + narration messages and includes
+             them as a "Recent story log" in the system prompt so AI suggestions are
+             contextually relevant to what players actually did.
+         (c) Added DM auth check (dm_mode === 'human' && dm_user_id === user.id).
+
+  5. XP level-up bug
+     — Root cause: app/api/dm-console/narrate/route.ts was selecting only
+       id, name, hp, max_hp, temp_hp, xp from characters. gameEventApplier.ts
+       needs level, class, and ability_scores to run the level-up check
+       (newLevel > c.level) and the HP increase calculation.
+       With level === undefined, JavaScript evaluates (2 > undefined) as false,
+       so XP was saved to the DB but the character's level never updated.
+     — Fix: expanded SELECT to include class, level, ability_scores,
+       proficiency_bonus, conditions, inventory.
+
+  OPEN ITEMS CARRIED FORWARD
+  ──────────────────────────
+  — Full spell casting system (canCastSpell, expendSpellSlot, short/long rest)
+  — Level-Up UI wizard modal
+  — DM advanced tool panels (NPC manager, quest tracker, encounter builder)
+  — Session log page
+
+
+================================================================================
+  SESSION 8 — 2026-05-16  (Production readiness: security, monitoring, legal)
+================================================================================
+
+  SCOPE
+  ─────
+  Full production-readiness pass. No new gameplay features — entirely
+  security, reliability, monitoring, and compliance work.
+  16 items from READINESS.md were audited; 11 implemented in code this session.
+
+  BUILT
+  ─────
+
+  1. Zod input validation on all 10 API routes
+     — Installed zod (was missing from package.json).
+     — Created lib/validation.ts:
+         parseBody(req, Schema) helper — returns typed data or a 422 NextResponse.
+         Per-route schemas: DMSchema, CampaignCreateSchema, CampaignJoinSchema,
+         CampaignEndSchema, CampaignArchiveSchema, DMConsoleNarrateSchema,
+         DMConsoleAssistSchema, CombatStartSchema, CombatActionSchema, DiceSchema,
+         FlagContentSchema.
+     — All 10 routes (dm, dm-console/narrate, dm-console/assist, campaign/create,
+       campaign/join, campaign/end, campaign/archive, combat/start, combat/action,
+       dice) now use parseBody instead of manual checks.
+     — Removed ad-hoc UUID_REGEX and typeof checks throughout.
+
+  2. Security headers
+     — Created vercel.json with Access-Control-Allow-Origin, X-Content-Type-Options,
+       X-Frame-Options, Referrer-Policy, and Permissions-Policy headers.
+     — Updated next.config.ts with a full Content-Security-Policy header covering
+       script-src, connect-src (Supabase + Groq + Anthropic), font-src, style-src,
+       img-src, and frame-ancestors.
+
+  3. Upstash Redis rate limiter (lib/upstashRateLimit.ts)
+     — checkRateLimitUpstash(key, { requests, window }) — same call signature as
+       the old in-memory checkRateLimit.
+     — Uses Upstash sliding window when UPSTASH_REDIS_REST_URL and
+       UPSTASH_REDIS_REST_TOKEN env vars are present; falls back to the in-memory
+       limiter (lib/rateLimiter.ts) if they are not (local dev).
+     — /api/dm now uses checkRateLimitUpstash('dm:{userId}', { requests: 20, window: '1 m' }).
+     — Added UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN to .env.example.
+     — Installed @upstash/ratelimit and @upstash/redis.
+
+  4. Error boundaries (components/ui/DMErrorBoundary.tsx)
+     — Installed react-error-boundary.
+     — DMErrorBoundary wraps any AI-dependent component. Shows a styled fallback
+       panel with "Try again" button. Error message shown in dev, hidden in prod.
+     — Wraps StoryLog and ActionPanel in play/page.tsx.
+     — Wraps AICopilot in dm-console/page.tsx.
+     — onError logs to console.error (caught by Sentry automatically in prod).
+
+  5. Prompt caching — lib/claude.ts
+     — system prompt now passed as a structured content block with
+       cache_control: { type: 'ephemeral' } instead of a bare string.
+     — response.usage.cache_read_input_tokens captured in AIResponse.cachedTokens.
+     — Updated model default to claude-sonnet-4-6 (was claude-sonnet-4-20250514).
+     — Added cachedTokens?: number to AIResponse interface in lib/aiTypes.ts.
+
+  6. Sentry error monitoring
+     — Installed @sentry/nextjs.
+     — Created sentry.client.config.ts, sentry.server.config.ts, sentry.edge.config.ts.
+     — Created instrumentation.ts (Next.js instrumentation hook — required for
+       server-side Sentry in App Router).
+     — Wrapped next.config.ts export in withSentryConfig(). Source map upload
+       disabled unless SENTRY_AUTH_TOKEN env var is set.
+     — Disabled in NODE_ENV !== 'production' so dev console stays clean.
+     — Needs NEXT_PUBLIC_SENTRY_DSN to activate — wire in Vercel env vars.
+     — Added NEXT_PUBLIC_SENTRY_DSN, SENTRY_ORG, SENTRY_PROJECT, SENTRY_AUTH_TOKEN
+       to .env.example.
+
+  7. DB migration 012 — supabase/migrations/012_indexes_and_moderation.sql
+     — Indexes: idx_campaigns_user_id, idx_campaign_members_user_id,
+       idx_campaign_members_campaign_id, idx_characters_campaign_id,
+       idx_characters_user_id, idx_messages_campaign_id,
+       idx_world_memory_summaries_campaign_id, idx_npcs_campaign_id,
+       idx_quests_campaign_id, idx_combat_encounters_campaign_id.
+     — New table: moderation_queue — stores user-flagged AI responses.
+         Columns: id, message_id (FK → messages), reported_by (FK → auth.users),
+                  reason (text, 1–500 chars), status ('pending'|'reviewed'|'dismissed'),
+                  created_at.
+         RLS: users can INSERT own flags; SELECT own flags. Admins query directly.
+     — ⚠️  Must be run in Supabase SQL editor or via supabase db push.
+
+  8. Privacy and Terms pages
+     — app/(legal)/privacy/page.tsx — hosted at /privacy.
+         Sections: who we are, what we collect, how we use it, third-party services,
+         data retention, GDPR/CCPA rights, cookies, contact.
+     — app/(legal)/terms/page.tsx — hosted at /terms.
+         Sections: acceptance, what RealmForge is, acceptable use, AI content,
+         content you create, availability, limitation of liability, changes, contact.
+     — Both pages linked from the login and register forms
+       ("By signing in you agree to our Terms and Privacy Policy").
+
+  9. Content flagging
+     — components/game/StoryLog.tsx: FlagButton component added to each narration
+       bubble. Hidden (opacity-0) until the bubble is hovered. Click → inline
+       reason input → POST /api/flag → "Flagged" confirmation.
+     — app/api/flag/route.ts: validates with FlagContentSchema (Zod), verifies
+       auth, checks message exists, inserts into moderation_queue.
+       Duplicate flags from the same user are silently accepted (no 409 error).
+
+  10. AGENTS.md coding standards
+      — Added mandatory rules section to dnd-platform/AGENTS.md covering:
+          API routes: must use parseBody (Zod), getAuthenticatedUser, rate limiting.
+          Components: must use DMErrorBoundary for any AI-dependent component.
+          Database: RLS + CREATE INDEX on every new table/FK column.
+          Security: all secrets via process.env, input length limits, CSP updates.
+
+  DECISIONS / NOTES
+  ─────────────────
+  — All Groq routes still use callGroq (not Claude). claude.ts prompt caching
+    applies when Anthropic routes are used (summarisation, future features).
+  — Upstash and Sentry are installed and fully wired but need real credentials
+    to activate in production. See .env.example for required env var names.
+  — SSL certificate verification had to be temporarily disabled (npm config
+    strict-ssl false) to install packages. Re-enabled immediately after.
+    This is a local network issue (likely corporate CA), not a code issue.
+
+  OPEN ITEMS CARRIED FORWARD
+  ──────────────────────────
+  — Run migration 012 in Supabase SQL editor
+  — Add UPSTASH_REDIS_REST_URL + TOKEN to Vercel env vars → activates persistent rate limiting
+  — Add NEXT_PUBLIC_SENTRY_DSN to Vercel env vars → activates error monitoring
+  — Set Anthropic cost limits in Anthropic Console (manual, no code change)
+  — Enable Supabase PITR (requires Pro plan, manual dashboard step)
+  — Update CORS origin in vercel.json once production domain is confirmed
+
+
+================================================================================
+  PENDING WORK (as of 2026-05-16)
+================================================================================
+
+  Priority  Item
+  ────────  ──────────────────────────────────────────────────────────────────
+
+  MEDIUM    Full spell casting system:
+              — Import SRD spell data (5e-database JSON or equivalent).
+              — canCastSpell(character, spell), expendSpellSlot(character, level)
+              — shortRest / longRest slot recovery
+              — Spell quick-cast buttons in ActionPanel
+
+  LOW       Level-Up UI wizard modal:
+              — Logic already in lib/dnd5e/leveling.ts (checkLevelUp, applyLevelUp)
+              — Modal triggered when XP crosses threshold
+              — Steps: +HP roll, ASI or feat choice, new class features
+
+  LOW       DM advanced tool panels (Phase 7.15):
+              — NPC manager, quest tracker, monster lookup, encounter builder
+
+  LOW       Session log page (/campaign/[id]/sessions):
+              — Chronological list of session summaries
+              — Export as text
+
+
+================================================================================

@@ -16,17 +16,25 @@ const QUICK_ACTIONS = [
 
 interface ActionPanelProps {
   onAction: (action: string) => void
+  dmError?: string | null
+  onClearError?: () => void
+  isHumanDM?: boolean
 }
 
-export function ActionPanel({ onAction }: ActionPanelProps) {
+export function ActionPanel({ onAction, dmError, onClearError, isHumanDM }: ActionPanelProps) {
   const [input, setInput] = useState('')
+  const [sending, setSending] = useState(false)
   const { isDMThinking, myCharacter } = useGameStore()
 
-  function handleSend() {
+  const blocked = isHumanDM ? sending : isDMThinking
+
+  async function handleSend() {
     const text = input.trim()
-    if (!text || isDMThinking) return
+    if (!text || blocked) return
+    if (isHumanDM) setSending(true)
     onAction(text)
     setInput('')
+    if (isHumanDM) setTimeout(() => setSending(false), 600)
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -37,20 +45,38 @@ export function ActionPanel({ onAction }: ActionPanelProps) {
   }
 
   return (
-    <div className="p-6 bg-gradient-to-t from-black/60 to-transparent">
-      {/* Quick actions */}
-      <div className="flex flex-wrap gap-2.5 mb-5 justify-center">
-        {QUICK_ACTIONS.map(({ label, action }) => (
-          <button
-            key={label}
-            onClick={() => onAction(action)}
-            disabled={isDMThinking}
-            className="text-[11px] font-bold uppercase tracking-wider px-4 py-2 rounded-xl border border-white/10 bg-white/5 text-gray-400 hover:bg-white/10 hover:border-white/20 hover:text-white disabled:opacity-40 transition-all shadow-lg active:scale-95"
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+    <div className="p-6">
+      {/* DM error banner */}
+      {dmError && (
+        <div className="mb-4 max-w-4xl mx-auto flex items-center justify-between gap-3 px-4 py-2.5 rounded-xl border border-red-500/30 bg-red-500/10 text-red-300 text-xs">
+          <span>{dmError}</span>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={() => { if (input.trim()) onAction(input.trim()); onClearError?.() }}
+              className="text-xs font-semibold text-amber-highlight hover:text-amber-main transition-colors"
+            >
+              Retry
+            </button>
+            <button onClick={onClearError} className="text-gray-500 hover:text-gray-300 transition-colors">✕</button>
+          </div>
+        </div>
+      )}
+
+      {/* Quick actions — only shown for AI DM */}
+      {!isHumanDM && (
+        <div className="flex flex-wrap gap-2.5 mb-5 justify-center">
+          {QUICK_ACTIONS.map(({ label, action }) => (
+            <button
+              key={label}
+              onClick={() => onAction(action)}
+              disabled={isDMThinking}
+              className="text-[11px] font-bold uppercase tracking-wider px-4 py-2 rounded-xl border border-foreground/10 bg-background/20 text-foreground/60 hover:bg-background/40 hover:border-foreground/20 hover:text-foreground disabled:opacity-40 transition-all shadow-lg active:scale-95 backdrop-blur-md"
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Text input */}
       <div className="max-w-4xl mx-auto">
@@ -62,13 +88,17 @@ export function ActionPanel({ onAction }: ActionPanelProps) {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            disabled={isDMThinking}
-            placeholder={isDMThinking ? 'The DM is considering your fate...' : 'What do you do next?'}
-            className="w-full pl-14 pr-24 py-4 rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl text-white placeholder-gray-500 focus:outline-none focus:border-amber-highlight/50 transition-all shadow-2xl"
+            disabled={blocked}
+            placeholder={
+              isHumanDM
+                ? (sending ? 'Message sent...' : 'Message your DM...')
+                : (isDMThinking ? 'The DM is considering your fate...' : 'What do you do next?')
+            }
+            className="w-full pl-14 pr-24 py-4 rounded-2xl border border-foreground/10 bg-background/40 backdrop-blur-2xl text-foreground placeholder-foreground/40 focus:outline-none focus:border-amber-highlight/50 transition-all shadow-2xl"
           />
           <button
             onClick={handleSend}
-            disabled={isDMThinking || !input.trim()}
+            disabled={blocked || !input.trim()}
             className="absolute right-2 top-1/2 -translate-y-1/2 btn-amber px-6 py-2 rounded-xl text-sm font-bold disabled:opacity-50 transition-all shadow-lg active:scale-95"
           >
             Send

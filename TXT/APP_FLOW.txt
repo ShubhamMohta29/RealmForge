@@ -1,0 +1,511 @@
+================================================================================
+  APP FLOW — Navigation & User Journey Map
+  RealmForge — AI-Powered D&D 5e Online Platform
+  Version: 1.0
+  Date: 2026-05-13
+================================================================================
+
+
+────────────────────────────────────────────────────────────────────────────────
+1. PAGES LIST
+────────────────────────────────────────────────────────────────────────────────
+
+  /                                   Landing page. Marketing copy, CTA buttons
+                                      (Play Now / Sign In). Accessible to all.
+
+  /register                           Account creation form.
+                                      Fields: name, email, password, date of birth.
+                                      DOB is required; used to set content rating
+                                      (under 16 / 16–17 / 18+). Stored via auth
+                                      signup metadata → handle_new_user trigger.
+
+  /login                              Sign-in form. Email + password.
+                                      Link to /register.
+
+  /dashboard                          User's home after auth. Lists all campaigns
+                                      they belong to (as player or DM). Entry
+                                      point for creating or joining a campaign.
+
+  /create-campaign                    Campaign creation wizard.
+                                      Fields: name, setting description, DM mode
+                                      (AI or Human). On submit → invite code shown.
+
+  /campaign/[id]/create-character     Character builder for a specific campaign.
+                                      Shown once per user per campaign, before
+                                      they can access the play view.
+
+  /campaign/[id]/play                 The main game screen for players.
+                                      Story log, action panel, character panel,
+                                      dice roller, initiative tracker (in combat).
+
+  /campaign/[id]/dm-console           Human DM only. Narration input, AI copilot
+                                      panel, party overview, DM toolbox.
+                                      Inaccessible to non-DM members.
+
+
+────────────────────────────────────────────────────────────────────────────────
+2. NAVIGATION STRUCTURE
+────────────────────────────────────────────────────────────────────────────────
+
+  LANDING / AUTH PAGES  (/  /login  /register)
+    Minimal top navbar: Logo left | "Sign In" + "Get Started" buttons right.
+    No sidebar. No bottom tabs.
+
+  DASHBOARD  (/dashboard)
+    Top navbar: Logo left | User avatar / account menu right (logout option).
+    No sidebar — full-width card grid of campaigns.
+
+  GAME SCREENS  (/campaign/[id]/play  /campaign/[id]/dm-console)
+    Three-column layout (desktop):
+      Right column:   Character panel (HP bar, XP bar, AC, conditions)
+      Center column: Story log (scrolling) + Action panel (bottom)
+      Left column:  Dice log + Initiative tracker
+
+    Top bar inside game:
+      Campaign name  |  current scene label  |  Back to Dashboard link
+
+    DM Console uses a similar layout with the AI Copilot panel replacing the
+    character panel and the Party Overview replacing the dice log.
+
+  MODALS / OVERLAYS (rendered on top of current page — no route change)
+    - Invite Code Modal     shown after campaign creation
+    - Join Campaign Modal   triggered from dashboard ("Join Campaign" button)
+    - Full Character Sheet  triggered from character panel "View Sheet" button
+                            Tabs: Overview | Spells | Inventory
+    - Level-Up Modal        triggered automatically when XP threshold crossed
+                            (future scope — currently auto-increments level)
+    - Campaign End Modal    triggered when user types "end campaign" in action
+                            Shows AI-generated campaign summary + confirm button
+    - Archive Confirm Modal second confirmation before archiving
+
+
+────────────────────────────────────────────────────────────────────────────────
+3. FIRST SCREEN — WHAT A BRAND NEW VISITOR SEES
+────────────────────────────────────────────────────────────────────────────────
+
+  A new visitor lands on / (the landing page).
+
+  Above the fold:
+    - Hero headline + one-line value prop
+      ("Play D&D tonight. No DM required.")
+    - Two CTAs:  [Play Now — it's free]  [Sign In]
+
+  Below the fold:
+    - Three feature highlights (AI DM / Multiplayer / Full 5e rules)
+    - Social proof or screenshot of the play screen
+
+  Clicking "Play Now" → /register
+  Clicking "Sign In"  → /login
+
+
+────────────────────────────────────────────────────────────────────────────────
+4. AUTH FLOW
+────────────────────────────────────────────────────────────────────────────────
+
+  REGISTRATION
+    /register
+      ↓  submit (name + email + password + date of birth — all required)
+    Supabase creates auth user; DOB passed in raw_user_meta_data
+    handle_new_user trigger writes DOB to public.users.date_of_birth
+      ↓  email confirmation sent (emailRedirectTo: {origin}/auth/callback)
+    User clicks confirmation link in email
+      ↓
+    /auth/callback  (Next.js route handler)
+      exchanges ?code= param for a Supabase session
+      ↓
+    /dashboard  (first visit — dashboard is empty, empty state shown)
+
+  LOGIN
+    /login
+      ↓  submit (email + password)
+    Supabase validates credentials
+      ↓  success
+    /dashboard
+
+    ↓  failure (wrong password / user not found)
+    Stay on /login — inline error: "Invalid email or password."
+
+  LOGOUT
+    User clicks avatar → "Log out" in dropdown
+    Session cleared
+      ↓
+    /  (landing page)
+
+  REDIRECT RULES
+    - Unauthenticated user hits any protected route → redirect to /login
+      Protected routes: /dashboard, /create-campaign, /campaign/*
+    - Authenticated user hits /login or /register → redirect to /dashboard
+    - After login, if user was redirected from a protected route, return them
+      to the originally requested URL (next query param pattern)
+
+
+────────────────────────────────────────────────────────────────────────────────
+5. CORE USER JOURNEY 1 — "Start a Campaign with Friends" (AI DM Mode)
+────────────────────────────────────────────────────────────────────────────────
+
+  ACTOR: User A (host / campaign creator)
+
+  Step 1   User A is on /dashboard. Clicks "Create Campaign."
+           → /create-campaign
+
+  Step 2   Fills in: Campaign Name, Setting Description, selects "AI DM" mode.
+           Clicks "Create."
+           → POST /api/campaign
+           → Campaign record created, unique 8-character invite code generated.
+
+  Step 3   Invite Code Modal appears on top of /dashboard.
+           Shows: "Your invite code is REALM-A7K2"
+           User A shares this code with friends (copy button).
+           Clicks "Go to Campaign."
+           → /campaign/[id]/create-character
+
+  Step 4   User A builds their character:
+           Name → Race → Class → Subclass → Roll ability scores (4d6 drop low)
+           → Backstory → Confirm
+           Character auto-saved to Supabase.
+           → /campaign/[id]/play  (User A's game screen)
+
+  ─────────────────────────────────
+
+  ACTOR: User B (friend / joining player)
+
+  Step 1   User B is on /dashboard. Clicks "Join Campaign."
+           Join Campaign Modal opens.
+           Enters invite code "REALM-A7K2". Clicks "Join."
+           → Campaign appears in their dashboard campaign list.
+           → /campaign/[id]/create-character  (redirected immediately)
+
+  Step 2   User B builds their character (same flow as Step 4 above).
+           → /campaign/[id]/play
+
+  ─────────────────────────────────
+
+  IN PLAY  (both users on /campaign/[id]/play)
+
+  - Supabase Realtime subscription established on mount.
+  - Story log shows the AI DM's opening narration (generated on first visit).
+  - Either player types an action in the Action Panel. Clicks "Send."
+    → POST /api/dm
+    → Thinking indicator shown in story log ("The DM is thinking...")
+    → AI narration appears in story log (visible to all players simultaneously)
+    → Any embedded game events (damage, XP, loot) applied and reflected in
+       the character panel (HP bar updates, XP bar fills, etc.)
+  - Dice Log updates with any rolls made.
+  - If narration contains start_combat → Initiative Tracker appears in right
+    column, combat flow begins (see Journey 3).
+
+
+────────────────────────────────────────────────────────────────────────────────
+6. CORE USER JOURNEY 2 — "Human DM Runs a Session" (Human DM Mode)
+────────────────────────────────────────────────────────────────────────────────
+
+  ACTOR: DM User (campaign creator, Human mode selected)
+
+  Step 1   Creates campaign with "Human DM" mode selected.
+           → POST /api/campaign/create
+           → Redirected DIRECTLY to /campaign/[id]/dm-console.
+             No character creation step — the DM is not a player.
+             (create-character page also has a guard that redirects the DM
+              away if they navigate there directly.)
+
+  Step 2   Dashboard shows the campaign card with ONLY a "DM Console" button
+           (amber, primary). No "Play →" button is shown for the DM.
+           Clicking the card body also routes to /dm-console.
+
+  Step 3   DM Console layout:
+           Left:   Shared Story Log (same messages all players see)
+                   + DM Narration Input (bottom)
+           Right:  Panel tabs — Party | Tools | AI Assist
+             Party tab:     PartyOverview (all player characters — HP, AC,
+                            level, conditions, updated in real time)
+             Tools tab:     DMToolbox (monster lookup, XP award, DM notes)
+             AI Assist tab: AICopilot (Groq suggestions with recent-message context)
+
+  Step 4   Players send messages → appear in story log as player_action entries.
+           DM reads them. AI DM is never called (/api/dm returns { queued: true }
+           immediately for human campaigns without calling Groq).
+
+  Step 5   DM optionally opens AI Assist tab, clicks a quick prompt or types a
+           custom question (e.g. "player just chose to fight the guards — what
+           happens next?").
+           → POST /api/dm-console/assist (Groq, with last 10 messages as context)
+           → Suggestion appears in the right panel.
+           → DM clicks "Insert into narration →" to populate the narration textarea.
+           → DM edits as needed.
+
+  Step 6   DM types (or edits the AI suggestion) in the narration textarea.
+           Clicks "Send."
+           → POST /api/dm-console/narrate
+           → Narration stored and broadcast via Realtime to all players.
+           → Game events parsed and applied (XP, damage, conditions, etc.).
+
+  ─────────────────────────────────
+
+  ACTOR: Player (Human DM Mode)
+
+  - Player experience at /campaign/[id]/play looks the same as AI mode but
+    the quick-action buttons are hidden and the input reads "Message your DM..."
+  - Submitting a message saves it as type='player_action' without calling Groq.
+    No "DM is thinking..." spinner appears — the DM will respond when ready.
+  - Narrations from the DM appear in the story log in real time via Realtime.
+
+
+────────────────────────────────────────────────────────────────────────────────
+7. CORE USER JOURNEY 3 — "Combat Encounter"
+────────────────────────────────────────────────────────────────────────────────
+
+  TRIGGER: AI narration contains <start_combat> tag, or DM manually
+           clicks "Start Combat" in the DM Toolbox.
+
+  Step 1   POST /api/combat/start
+           Initiative rolled for all player characters and monsters.
+           combat_encounters record created.
+           Realtime broadcast → Initiative Tracker appears on all clients.
+
+  Step 2   Initiative Tracker (right column) shows:
+           - Turn order list (sorted descending by initiative)
+           - Current active combatant highlighted
+           - HP and AC per combatant
+           - Active conditions (poisoned, blinded, etc.)
+           - Round counter
+
+  Step 3   On a PLAYER'S turn:
+           Action Panel changes to Combat Mode:
+           Buttons: [Attack] [Cast Spell] [Dash] [Disengage] [Other Action]
+           Player selects an action and a target.
+           → POST /api/combat/action
+           → Attack roll: 1d20 + modifier vs. target AC
+           → Hit: damage applied (natural 20 = crit, double dice)
+           → Miss: "Your strike misses." logged.
+           → Damage, HP changes broadcast to all clients.
+           → Turn advances to next combatant.
+
+  Step 4   On a MONSTER'S turn:
+           MonsterAI module executes automatically.
+           Basic monster: targets lowest-HP player, makes basic attack.
+           Complex monster: Claude Haiku selects action.
+           Result appears in story log as a combat log entry.
+           → Turn advances.
+
+  Step 5   If a player reaches 0 HP:
+           Character panel shows "Unconscious" state.
+           Each round, that player makes a death saving throw (d20 vs DC 10).
+           Three successes → stabilized (shown in character panel).
+           Three failures → dead (character marked dead, locked out of actions).
+
+  Step 6   Combat ends when all monsters are defeated or all players are
+           incapacitated.
+           combat_encounters record marked completed.
+           Initiative Tracker disappears.
+           Normal play resumes.
+
+  Step 7   AI DM generates a post-combat narration (XP awarded, loot dropped).
+           xp events update XP bars. If threshold crossed → level increments.
+
+
+────────────────────────────────────────────────────────────────────────────────
+8. CORE USER JOURNEY 4 — "Ending a Campaign"
+────────────────────────────────────────────────────────────────────────────────
+
+  Step 1   A player (or DM) types "end campaign" (or similar phrasing) in
+           the Action Panel.
+
+  Step 2   The AI DM detects the intent. Before archiving, it generates a
+           full campaign summary: major story beats, characters, achievements,
+           final fate of the party.
+
+  Step 3   Campaign End Modal opens (full-screen overlay):
+           - Title: "Your Campaign Has Ended"
+           - AI-generated summary text (scrollable)
+           - Two buttons: [Archive Campaign]  [Keep Playing]
+
+  Step 4   User clicks "Archive Campaign."
+           Archive Confirm Modal (second confirmation):
+           "This will archive the campaign. You can view it but not play it.
+           Are you sure?"
+           [Confirm Archive]  [Cancel]
+
+  Step 5   On confirm:
+           Campaign status updated to 'archived' in Supabase.
+           All players on the play screen see the modal and are redirected
+           to /dashboard after a short delay.
+           Campaign card on dashboard shows "Archived" badge.
+           Archived campaigns are read-only — no new actions can be sent.
+
+
+────────────────────────────────────────────────────────────────────────────────
+9. EMPTY STATES
+────────────────────────────────────────────────────────────────────────────────
+
+  DASHBOARD — No campaigns yet
+    Illustration + text: "You're not in any campaigns yet."
+    Two CTAs: [Create a Campaign]  [Join with Invite Code]
+
+  STORY LOG — Campaign just created, first player joins
+    Placeholder text while AI DM generates the opening narration.
+    Loading spinner: "Your adventure is beginning..."
+    Once generated, the opening narration appears and auto-scrolls.
+
+  DICE LOG — No rolls yet
+    Subtle text: "Your rolls will appear here."
+
+  PARTY OVERVIEW (DM Console) — No players have created characters yet
+    "Waiting for players to create their characters..."
+    Updates live via Realtime as each player completes character creation.
+
+  NPC LIST / QUEST LOG — No NPCs or quests yet
+    These panels simply show nothing until the AI narration creates them
+    via game events. No explicit empty state needed — they are collapsed
+    or hidden until populated.
+
+  INVENTORY (Character Sheet) — Empty inventory
+    "Your inventory is empty."
+    Items appear as loot events are parsed.
+
+  SPELLS TAB (Character Sheet) — Non-spellcaster class
+    "Your class does not use spells."
+    For spellcasters with no spells yet: "Spells will appear as you
+    discover or learn them."
+
+
+────────────────────────────────────────────────────────────────────────────────
+10. ERROR STATES
+────────────────────────────────────────────────────────────────────────────────
+
+  AI DM FAILURE (Groq API down or rate-limited)
+    Story log shows: "The Dungeon Master's voice fades... Please try again."
+    Retry button appears below the error message.
+    The failed player action is preserved in the input box.
+
+  INVALID INVITE CODE
+    Join Campaign Modal shows inline error: "That code doesn't exist.
+    Check it with your host and try again."
+
+  DUPLICATE CHARACTER (user tries to create a second character in same campaign)
+    /campaign/[id]/create-character redirects to /campaign/[id]/play
+    with a toast: "You already have a character in this campaign."
+
+  NETWORK DISCONNECTION (Supabase Realtime drops)
+    Subtle banner at top of play screen: "Connection lost — reconnecting..."
+    Banner clears when connection is restored. No data is lost — messages
+    are fetched fresh on reconnect.
+
+  COMBAT ACTION WHILE NOT YOUR TURN
+    "It's not your turn." toast notification. Action panel buttons disabled
+    when it is not the current player's turn.
+
+  UNAUTHORIZED ACCESS TO DM CONSOLE (non-DM user)
+    /campaign/[id]/dm-console checks session against campaign_members.
+    If user is not the DM → redirect to /campaign/[id]/play
+    Toast: "Only the Dungeon Master can access the console."
+
+  ACCESSING A CAMPAIGN YOU'RE NOT IN
+    /campaign/[id]/play checks membership.
+    If not a member → redirect to /dashboard
+    Toast: "You're not a member of that campaign."
+
+  ARCHIVED CAMPAIGN ACCESSED
+    Player navigates to an archived campaign's play URL.
+    Read-only view of the story log is shown.
+    Action panel is hidden. Banner: "This campaign has been archived."
+    [Back to Dashboard] button shown prominently.
+
+
+────────────────────────────────────────────────────────────────────────────────
+11. MODAL / OVERLAY INTERACTIONS
+────────────────────────────────────────────────────────────────────────────────
+
+  INVITE CODE MODAL
+    Trigger:  Immediately after successful campaign creation.
+    Content:  Invite code (large, copy button), share instructions.
+    Dismiss:  "Go to Campaign" button → /campaign/[id]/create-character
+    Backdrop: Clicking outside does NOT dismiss (user must see the code).
+
+  JOIN CAMPAIGN MODAL
+    Trigger:  "Join Campaign" button on dashboard.
+    Content:  Single text input for invite code.
+    Dismiss:  Cancel button or Escape key.
+    On join:  Modal closes, redirect to /campaign/[id]/create-character.
+
+  FULL CHARACTER SHEET MODAL
+    Trigger:  "View Sheet" button in character panel during play.
+    Content:  Three tabs — Overview | Spells | Inventory
+    Dismiss:  X button or backdrop click.
+    No route change — game continues behind the modal.
+
+  CAMPAIGN END MODAL
+    Trigger:  AI DM detects "end campaign" intent.
+    Content:  AI-generated campaign summary + Archive / Keep Playing.
+    Dismiss:  "Keep Playing" button only. Backdrop click does not dismiss.
+
+  ARCHIVE CONFIRM MODAL
+    Trigger:  "Archive Campaign" in Campaign End Modal.
+    Content:  Warning text + Confirm / Cancel.
+    On confirm: Archive, redirect all players to /dashboard.
+
+  LEVEL-UP NOTIFICATION  (current scope: auto-increment only)
+    Trigger:  XP bar crosses threshold.
+    Behavior: Toast notification: "Level up! You are now level [N]."
+              Character stats auto-updated.
+              Full Level-Up Wizard modal is future scope.
+
+
+────────────────────────────────────────────────────────────────────────────────
+12. REDIRECT LOGIC — COMPLETE MAP
+────────────────────────────────────────────────────────────────────────────────
+
+  TRIGGER                                         DESTINATION
+  ─────────────────────────────────────────────── ───────────────────────────
+  New visitor hits /                              / (stays — landing page)
+  Unauth user hits /dashboard                     /login?next=/dashboard
+  Unauth user hits /campaign/[id]/play            /login?next=/campaign/[id]/play
+  Unauth user hits /create-campaign               /login?next=/create-campaign
+  Auth user hits /login                           /dashboard
+  Auth user hits /register                        /dashboard
+  User clicks email confirmation link             /auth/callback → /dashboard
+  Auth callback code exchange fails               /login?error=auth_callback_failed
+  After successful registration                   /dashboard
+  After successful login                          next param URL, else /dashboard
+  After logout                                    /
+  After campaign creation (AI DM mode)            /campaign/[id]/create-character
+  After campaign creation (Human DM mode)         /campaign/[id]/dm-console
+  After joining a campaign (no character)         /campaign/[id]/create-character
+  After joining a campaign (character exists)     /campaign/[id]/play
+  After joining as Human DM of the campaign       /campaign/[id]/dm-console
+  After character creation                        /campaign/[id]/play
+  Human DM hits /campaign/[id]/create-character   /campaign/[id]/dm-console (guard redirect)
+  Non-DM hits /campaign/[id]/dm-console           /campaign/[id]/play
+  User hits campaign they're not a member of      /dashboard
+  User hits archived campaign's play URL          Read-only archived view
+  After campaign archive confirmed                /dashboard (all players)
+
+
+────────────────────────────────────────────────────────────────────────────────
+13. LOADING STATES
+────────────────────────────────────────────────────────────────────────────────
+
+  PAGE NAVIGATION
+    Next.js App Router handles route transitions with a loading.tsx skeleton
+    for /dashboard and /campaign/[id]/play.
+
+  AI DM THINKING
+    After a player submits an action, a "thinking" entry appears in the story
+    log immediately: animated ellipsis + "The Dungeon Master ponders..."
+    Replaced by the actual narration when the response arrives.
+    Target latency: under 5 seconds (NFR-2).
+
+  CHARACTER CREATION — ROLL ABILITY SCORES
+    When "Roll Stats" is clicked, dice animation plays for ~1 second before
+    the six scores resolve. Communicates randomness, not network latency.
+
+  COMBAT ACTION RESOLUTION
+    After the player submits a combat action, the action buttons are disabled
+    and a spinner appears. Re-enabled when the server response confirms the
+    result and the turn advances.
+
+  REALTIME RECONNECT
+    While reconnecting (network drop), the action panel is disabled.
+    Story log shows a "Reconnecting..." overlay. Enabled on restore.
+
+
+================================================================================

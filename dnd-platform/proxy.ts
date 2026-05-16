@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const res = NextResponse.next({ request: req })
 
   const supabase = createServerClient(
@@ -32,7 +32,9 @@ export async function middleware(req: NextRequest) {
   const isProtected = protectedPaths.some(p => req.nextUrl.pathname.startsWith(p))
 
   if (!user && isProtected) {
-    const redirectResponse = NextResponse.redirect(new URL('/login', req.url))
+    const loginUrl = new URL('/login', req.url)
+    loginUrl.searchParams.set('next', req.nextUrl.pathname)
+    const redirectResponse = NextResponse.redirect(loginUrl)
     res.cookies.getAll().forEach(cookie => {
       redirectResponse.cookies.set(cookie.name, cookie.value)
     })
@@ -40,7 +42,9 @@ export async function middleware(req: NextRequest) {
   }
 
   if (user && (req.nextUrl.pathname === '/login' || req.nextUrl.pathname === '/register')) {
-    const redirectResponse = NextResponse.redirect(new URL('/dashboard', req.url))
+    const next = req.nextUrl.searchParams.get('next')
+    const destination = next && next.startsWith('/') ? next : '/dashboard'
+    const redirectResponse = NextResponse.redirect(new URL(destination, req.url))
     res.cookies.getAll().forEach(cookie => {
       redirectResponse.cookies.set(cookie.name, cookie.value)
     })

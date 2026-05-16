@@ -2,15 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin, getAuthenticatedUser } from '@/lib/supabaseServer'
 import { applyEvents } from '@/lib/gameEventApplier'
 import { parseGameEvents } from '@/lib/gameEvents'
+import { parseBody, DMConsoleNarrateSchema } from '@/lib/validation'
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
+    const body = await parseBody(req, DMConsoleNarrateSchema)
+    if (body instanceof NextResponse) return body
     const { campaignId, content, targetCharacterId } = body
-
-    if (!campaignId || !content) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
-    }
 
     const user = await getAuthenticatedUser(req)
     if (!user) {
@@ -52,7 +50,7 @@ export async function POST(req: NextRequest) {
 
     const { data: characters } = await supabaseAdmin
       .from('characters')
-      .select('id, name, hp, max_hp, temp_hp, xp')
+      .select('id, name, class, level, hp, max_hp, temp_hp, xp, ability_scores, proficiency_bonus, conditions, inventory')
       .eq('campaign_id', campaignId)
 
     await applyEvents(events, campaignId, characters || [])

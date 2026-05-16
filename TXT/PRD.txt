@@ -1,0 +1,437 @@
+================================================================================
+  PRODUCT REQUIREMENTS DOCUMENT
+  RealmForge — AI-Powered D&D 5e Online Platform
+  Version: 1.0
+  Date: 2026-05-13
+  Status: Active Development
+================================================================================
+
+
+────────────────────────────────────────────────────────────────────────────────
+1. EXECUTIVE SUMMARY
+────────────────────────────────────────────────────────────────────────────────
+RealmForge is a web-based platform for playing Dungeons & Dragons 5th
+Edition online. It removes the most common barrier to playing D&D — the need for
+a human Dungeon Master — by replacing that role with a large language model
+(Groq Llama 3.3 70B) that narrates the story, enforces rules, and drives the
+world in real time.
+
+The platform supports two modes: fully autonomous AI-DM campaigns where the AI
+handles everything, and human-DM campaigns where a person runs the game with an
+AI copilot (Claude Haiku) available for suggestions. Both modes support
+multiplayer with real-time synchronization across all players.
+
+The core value proposition is: pick up and play a D&D campaign with friends,
+any time, without scheduling around a DM.
+
+
+────────────────────────────────────────────────────────────────────────────────
+2. PROBLEM STATEMENT
+────────────────────────────────────────────────────────────────────────────────
+
+2.1 The DM Bottleneck
+  - Finding and retaining a Dungeon Master is the #1 reason groups don't play.
+  - A DM must prepare hours of content per session, adjudicate rules live, and
+    improvise narrative — a high-skill, high-time commitment role.
+  - Most groups play infrequently or not at all because no one wants the job.
+
+2.2 Existing Alternatives Are Incomplete
+  - Virtual tabletops (Roll20, Foundry) require a human DM and focus on maps
+    and dice, not storytelling.
+  - AI chatbots (ChatGPT, Claude.ai) can improv a story but have no persistent
+    world state, no rules enforcement, no multiplayer, and no character system.
+  - No existing product combines: AI narration + full D&D 5e rules + real-time
+    multiplayer + persistent campaign state.
+
+2.3 Target Users
+  Primary:  Friend groups who want to play D&D but lack a willing DM.
+  Secondary: Experienced DMs who want AI assistance to reduce prep work.
+  Tertiary: Solo players who want a D&D experience without a group.
+
+
+────────────────────────────────────────────────────────────────────────────────
+3. GOALS AND SUCCESS METRICS
+────────────────────────────────────────────────────────────────────────────────
+
+3.1 Product Goals
+  G1. Let a group of friends start and finish a D&D session with zero prep.
+  G2. Make AI narration feel like a skilled human DM — reactive, consistent,
+      and narratively satisfying.
+  G3. Enforce D&D 5e rules accurately enough that the game feels fair.
+  G4. Support real-time multiplayer so all players are always in sync.
+  G5. Keep AI costs low enough for sustainable operation.
+
+3.2 Success Metrics
+  - Session completion rate: % of campaigns that reach a natural stopping point
+    rather than being abandoned.
+  - Narration quality score: qualitative user rating of AI narration per session.
+  - Rules error rate: frequency of incorrect mechanical outcomes (damage, saves).
+  - Time-to-first-action: time from account creation to first player action sent.
+  - Cost-per-session: total Groq/Anthropic API spend per completed session.
+
+
+────────────────────────────────────────────────────────────────────────────────
+4. USER PERSONAS
+────────────────────────────────────────────────────────────────────────────────
+
+PERSONA A — "The Group That Never Plays"
+  Age: 22–35. Has a friend group that loves D&D but hasn't played in months.
+  Pain: No one has time to DM. Sessions get cancelled.
+  Goal: Drop into a campaign on a Friday night with minimal setup.
+  Tech comfort: Medium. Uses web apps daily, not developers.
+
+PERSONA B — "The Busy DM"
+  Age: 25–40. Experienced DM, runs games occasionally.
+  Pain: Prep takes 5–10 hours per session. AI could do the filler content.
+  Goal: Use the AI copilot to speed up their own campaigns.
+  Tech comfort: High. Has used Roll20 or Foundry before.
+
+PERSONA C — "The Solo Explorer"
+  Age: 18–30. Wants the D&D experience but has no group.
+  Pain: D&D requires 3+ people. Solo play is underserved.
+  Goal: Run a solo campaign with the AI as DM and narrator.
+  Tech comfort: Medium-high.
+
+
+────────────────────────────────────────────────────────────────────────────────
+5. FEATURES AND REQUIREMENTS
+────────────────────────────────────────────────────────────────────────────────
+
+5.1 Authentication and User Management
+
+  REQ-AUTH-1   Users can register with email and password.
+  REQ-AUTH-2   Users can log in and receive a persistent session.
+  REQ-AUTH-3   Protected routes (/dashboard, /campaign, /create-campaign)
+               redirect unauthenticated users to /login.
+  REQ-AUTH-4   Logged-in users are redirected away from /login and /register.
+  REQ-AUTH-5   All database queries are scoped to the authenticated user via
+               Row Level Security — users cannot read or modify other users'
+               data.
+
+5.2 Campaign Management
+
+  REQ-CAMP-1   A user can create a campaign with: name, setting description,
+               and DM mode (AI or Human).
+  REQ-CAMP-2   Campaign creation automatically generates a unique 8-character
+               invite code and displays it to the user to let them share it
+               with their friends.
+  REQ-CAMP-3   Any authenticated user can join a campaign by entering a valid
+               invite code.
+  REQ-CAMP-4   The dashboard lists all campaigns the user is a member of.
+  REQ-CAMP-5   The campaign creator is designated as DM and has access to the
+               DM Console in Human mode.
+  REQ-CAMP-6   Campaign state (current scene, world state) persists across
+               sessions for that particular campaign only.
+  REQ-CAMP-7  Allow the user to archive the campaign whenever they choose to.
+
+5.3 Character Creation and Management
+
+  REQ-CHAR-1   Players can create one character per campaign.
+  REQ-CHAR-2   Character creation includes: name, race, class, subclass,
+               and backstory.
+  REQ-CHAR-3   Ability scores are determined by rolling 4d6 and dropping the
+               lowest die, six times.
+  REQ-CHAR-4   All D&D 5e standard races and classes are available.
+  REQ-CHAR-5   The system calculates derived stats automatically: ability
+               modifiers, skill bonuses, saving throw bonuses, AC, and
+               proficiency bonus.
+  REQ-CHAR-6   Characters persist: HP, XP, conditions, inventory, spells,
+               and death saves are stored and synced in real time.
+  REQ-CHAR-7   The character panel shows: HP bar, XP bar, AC, conditions,
+               and a button to open the full character sheet.
+  REQ-CHAR-8   The full character sheet shows all stats across tabs:
+               Overview, Spells, Inventory.
+
+5.4 AI Dungeon Master (AI Mode)
+
+  REQ-AIDM-1   When a player submits an action, the AI DM generates a
+               narrative response of 1–2 paragraphs.
+  REQ-AIDM-2   The DM system prompt is built dynamically and includes:
+               campaign setting, character summaries, active NPCs, active
+               quests, current scene, and recent world memory summaries.
+  REQ-AIDM-3   The AI must embed structured game events as XML tags within
+               its narration. Supported event types:
+                 - damage (target, amount, type)
+                 - heal (target, amount)
+                 - xp (amount)
+                 - loot (item name, rarity)
+                 - condition_add (target, condition)
+                 - start_combat (monster names)
+                 - new_npc (name, description)
+                 - scene_update (description)
+  REQ-AIDM-4   Parsed events must be applied atomically to the database
+               before the narrative response is returned to the client.
+  REQ-AIDM-5   To control token usage, only the last 6 messages are included
+               in the AI prompt context window.
+  REQ-AIDM-6   Every 20 narration messages, a 150–200 word session summary
+               is generated (via Groq Llama 3.1 8B Instant) and stored.
+               These summaries are injected into future prompts to maintain
+               long-term continuity without overflowing the context window.
+  REQ-AIDM-7   The AI model for narration is Groq Llama 3.3 70B.
+               The AI model for summarization is Groq Llama 3.1 8B Instant.
+
+5.5 Human DM Mode
+
+  REQ-HRDM-1   In Human mode, the DM accesses a separate console page
+               (/campaign/[id]/dm-console).
+  REQ-HRDM-2   The DM console shows: the shared story log, a narration input,
+               the AI copilot panel, a party overview, and a toolbox.
+  REQ-HRDM-3   The DM types narration which is broadcast to all players
+               and parsed for game events exactly as in AI mode.
+  REQ-HRDM-4   The AI Copilot (Claude Haiku) generates suggested next lines
+               for the DM based on campaign context and party state. The DM
+               can accept a suggestion with one click.
+  REQ-HRDM-5   The Party Overview shows all player characters' current HP,
+               AC, level, and active conditions.
+  REQ-HRDM-6   The DM Toolbox provides quick-reference tools and shortcuts.
+
+5.6 Combat System
+
+  REQ-CMBT-1   Combat begins when a start_combat event is parsed from the
+               AI narration or when the DM manually initiates it.
+  REQ-CMBT-2   On combat start, initiative is rolled for all combatants:
+               1d20 + DEX modifier. Combatants are sorted descending by result.
+  REQ-CMBT-3   The initiative tracker UI displays: turn order, current active
+               combatant, HP/AC per combatant, active conditions, and round
+               number.
+  REQ-CMBT-4   On a player's turn they may: attack, use a skill, cast a spell,
+               disengage, or take another action. Actions are resolved via
+               the /api/combat/action endpoint.
+  REQ-CMBT-5   Attack resolution: 1d20 + attack modifier vs. target AC.
+               Natural 20 = critical hit (double damage dice).
+               Natural 1 = automatic miss.
+  REQ-CMBT-6   Damage is applied: current HP reduced, then temp HP if any.
+  REQ-CMBT-7   Active conditions modify combat rolls as per D&D 5e rules
+               (e.g., blinded imposes disadvantage on attack rolls).
+  REQ-CMBT-8   Death saves: when HP reaches 0, the character makes a death
+               saving throw (DC 10). Three successes = stabilized.
+               Three failures = dead.
+  REQ-CMBT-9   Monster turns are handled by the MonsterAI module.
+               Basic monsters target the lowest-HP player and make a
+               basic attack. Complex monsters with special abilities
+               use Claude Haiku for decision-making.
+  REQ-CMBT-10  Monster stat blocks are drawn from the monsters library.
+               Damage immunities are respected.
+  REQ-CMBT-11  Combat state (turn order, round, monster HP) is persisted in
+               combat_encounters and synced to all clients via Realtime.
+
+5.7 Dice System
+
+  REQ-DICE-1   The platform supports all standard D&D dice: d4, d6, d8, d10,
+               d12, d20, d100.
+  REQ-DICE-2   Rolls can be made with advantage (roll twice, take higher)
+               or disadvantage (roll twice, take lower).
+  REQ-DICE-3   Skill checks, saving throws, and ability checks automatically
+               apply the character's relevant modifier.
+  REQ-DICE-4   The Dice Log sidebar shows the last 5 rolls, most recent first,
+               with: die type, result, modifier, total, and purpose label.
+  REQ-DICE-5   All dice rolls are recorded as messages in the messages table
+               with their metadata.
+
+5.8 Multiplayer and Real-Time Sync
+
+  REQ-RT-1     All players in a campaign see narration, player actions, dice
+               rolls, and combat log entries the moment they are created.
+  REQ-RT-2     Character stat changes (HP, XP, conditions) propagate to all
+               clients immediately via Supabase Realtime subscriptions.
+  REQ-RT-3     Combat state changes (initiative updates, HP changes) are
+               broadcast to all clients in real time.
+  REQ-RT-4     The system does not use polling. All updates are event-driven.
+
+5.9 World State and Persistence
+
+  REQ-WORLD-1  NPCs encountered during play are stored with: name,
+               description, disposition, location, and notes.
+               They persist across sessions and are referenced in DM prompts.
+  REQ-WORLD-2  Quests are tracked with: title, description, objectives,
+               XP reward, and status (active / completed / abandoned).
+  REQ-WORLD-3  The current scene description is stored on the campaign record
+               and updated by scene_update events.
+  REQ-WORLD-4  World state (a freeform JSONB field) can store additional
+               campaign context for injection into the DM prompt.
+
+5.10 XP and Progression
+
+  REQ-XP-1     XP is awarded via xp game events parsed from narration.
+  REQ-XP-2     The XP bar displays current XP and progress toward next level.
+  REQ-XP-3     XP thresholds follow the D&D 5e standard level table.
+  REQ-XP-4     On reaching a level threshold, the character's level increments.
+               (Level-up UI wizard is a future requirement — see Section 7.)
+
+
+────────────────────────────────────────────────────────────────────────────────
+6. NON-FUNCTIONAL REQUIREMENTS
+────────────────────────────────────────────────────────────────────────────────
+
+  NFR-1  Security
+         All tables enforce Row Level Security. No user can query, insert,
+         update, or delete records outside their authorized scope.
+         The Supabase service role key is never exposed to the client —
+         used only in server-side API routes.
+
+  NFR-2  Latency
+         AI narration responses should complete within 5 seconds for typical
+         prompts. The UI must show a loading/thinking state while waiting.
+
+  NFR-3  Cost Control
+         API costs are controlled by: limiting prompt history to last 6
+         messages, using the 8B model for non-narrative tasks (summarization,
+         simple monster AI), and using Claude Haiku (not Opus/Sonnet) for
+         the DM copilot.
+
+  NFR-4  Consistency
+         The AI DM must maintain narrative consistency across a session.
+         NPC names, quest details, and established world facts must not
+         contradict themselves. World memory summaries are the mechanism
+         for achieving this.
+
+  NFR-5  Availability
+         The platform depends on Supabase and Groq/Anthropic uptime.
+         Errors from external AI APIs should be caught and surfaced as
+         user-friendly messages rather than crashes.
+
+  NFR-6  Accessibility
+         Minimum: sufficient color contrast on all text, keyboard-navigable
+         primary flows (login, send action, roll dice).
+
+
+────────────────────────────────────────────────────────────────────────────────
+7. FUTURE REQUIREMENTS (OUT OF CURRENT SCOPE)
+────────────────────────────────────────────────────────────────────────────────
+
+  FUTURE-1  Spell Casting System (Medium priority)
+            Full spell resolution: slot deduction on cast, damage/healing
+            effects applied as game events, concentration tracking,
+            spell save DCs, area-of-effect resolution.
+
+  FUTURE-2  Equipment and Item Mechanics (Medium priority)
+            Equipping weapons and armor modifies AC and attack bonus.
+            Consumables (potions) trigger heal events on use.
+            Attunement slot limit enforcement.
+            Item use as a combat action.
+
+  FUTURE-3  Level-Up UI Wizard (Low priority)
+            When a character crosses an XP threshold, a modal guides them
+            through: +HP roll, ASI or feat choice, new class features,
+            spell slot increases. Logic exists in lib/dnd5e/leveling.ts;
+            the UI flow does not yet exist.
+
+  FUTURE-4  Feats and Multiclassing (Low priority)
+            Feat selection at ASI levels (every 4 levels for most classes).
+            Multiclassing prerequisites and combined spell slot table.
+
+  FUTURE-5  Visual Map / Encounter Builder (Low priority)
+            Grid-based tactical map for combat encounters.
+            The current text-only approach is considered fully playable;
+            this is an enhancement for groups that prefer visual combat.
+
+  FUTURE-6  Character Export (Low priority)
+            Export character sheet as PDF or JSON for use outside
+            the platform (printing, D&D Beyond import, etc.).
+
+  FUTURE-7  Mobile Optimization (Low priority)
+            The current layout is desktop-first. A responsive mobile layout
+            would expand the addressable audience.
+
+  FUTURE-8  Mana Bar (High prioroty)
+            Make a mana bar right below health bar to show the player's
+            character's mana (in current/total format) with a bar. It must be
+            different depending on classes, for example, spellcaster's will
+            have more mana and fighter's will have none.
+
+
+────────────────────────────────────────────────────────────────────────────────
+8. TECHNICAL ARCHITECTURE SUMMARY
+────────────────────────────────────────────────────────────────────────────────
+
+8.1 Stack
+  Frontend:         Next.js 16 (App Router), React 19, TypeScript 5
+  Backend:          Railway/Next.js
+  Styling:          Tailwind CSS 4
+  State:            Zustand 5 (client), Supabase Realtime (server push)
+  Database / Auth:  Supabase (PostgreSQL + Auth + Realtime)
+  AI — Narration:   Groq API, Llama 3.3 70B
+  AI — Summary:     Groq API, Llama 3.1 8B Instant
+  AI — Copilot:     Anthropic API, Claude Haiku
+  Deployment:       Vercel
+
+8.2 Data Flow (AI Mode)
+  1. Player submits action via ActionPanel
+  2. POST /api/dm with campaign ID, character ID, action text
+  3. Server fetches context from Supabase (campaign, chars, NPCs, quests,
+     world memory summaries)
+  4. systemPrompt.ts assembles the full DM system prompt
+  5. Groq Llama 3.3 70B returns narration text with embedded XML events
+  6. gameEvents.ts parses XML tags from the narration
+  7. gameEventApplier.ts writes each event to Supabase
+  8. Narration message is stored in messages table
+  9. Supabase Realtime broadcasts the new message to all clients
+  10. All clients update their Zustand store with the new message
+      and any character stat changes
+
+8.3 Database Tables
+  users               — auth users mirror
+  campaigns           — campaign records with settings and world state
+  campaign_members    — user ↔ campaign junction
+  characters          — full character data (JSONB for complex state)
+  messages            — all narration, actions, dice rolls, combat log
+  npcs                — persistent NPC records per campaign
+  quests              — quest tracking per campaign
+  world_memory_summaries — session summaries for long-term DM context
+  combat_encounters   — active and historical combat state
+
+8.4 API Routes
+  POST /api/dm                    AI DM narration endpoint
+  POST /api/dm-console/narrate    Human DM broadcast endpoint
+  POST /api/dm-console/assist     AI copilot suggestion endpoint
+  POST /api/campaign              Campaign creation
+  POST /api/combat/start          Initiate combat encounter
+  POST /api/combat/action         Resolve player combat turn
+  POST /api/dice                  Generic dice roll
+
+
+────────────────────────────────────────────────────────────────────────────────
+9. CONSTRAINTS AND DEPENDENCIES
+────────────────────────────────────────────────────────────────────────────────
+
+  - Groq API availability and rate limits affect real-time narration latency.
+  - Anthropic API availability affects the AI copilot and complex monster AI.
+  - Supabase free tier limits on realtime connections and database size
+    constrain the number of concurrent campaigns at scale.
+  - D&D 5e SRD rules are used throughout; content outside the SRD (some
+    classes, spells, monsters) is intentionally omitted to avoid IP concerns.
+  - The platform is web-only. No mobile app is planned in the current scope.
+
+
+────────────────────────────────────────────────────────────────────────────────
+10. OPEN QUESTIONS
+────────────────────────────────────────────────────────────────────────────────
+
+  OQ-1  Monetization: How will API costs be covered at scale?
+        Options: subscription, credits, free tier with limits.
+
+  OQ-2  Content moderation: The AI DM can generate any content.
+        Should there be guardrails for violent or adult content,
+        and how should they be configured per campaign?
+        The AI DM can generate anything, given that the user is over 18,
+        and can generate violent scenes if the user is over 16. If UNDER 16,
+        The DM must be very moderate in what it generates.
+
+  OQ-3  Campaign length: Currently there is no mechanism to "end" a campaign
+        beyond abandoning it. Should the AI DM be able to write a narrative
+        conclusion, and should completed campaigns be archived?
+        Yes. If a user says end campign, the AI DM must make a summary of the
+        campaign so that the player can get a proper look at their campaign,
+        then ask for confiormation and then archive the campaign.
+
+  OQ-4  Solo play: The platform technically supports single-player campaigns
+        (one player, AI DM) but this has not been explicitly tested or
+        designed for. Is solo play a first-class use case?
+        Yes
+
+  OQ-5  Spell system scope: A full 5e spell system (900+ spells) is a major
+        undertaking. Should the MVP spell system cover only the most common
+        spells (top 30–50) rather than aiming for completeness?
+        Aim for comprehensiveness.
+
+================================================================================

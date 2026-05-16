@@ -1,0 +1,533 @@
+================================================================================
+  UI/UX DESIGN BRIEF — Visual & Interaction Design Guide
+  RealmForge — AI-Powered D&D 5e Online Platform
+  Version: 1.0
+  Date: 2026-05-13
+================================================================================
+
+
+────────────────────────────────────────────────────────────────────────────────
+1. AESTHETIC DIRECTION
+────────────────────────────────────────────────────────────────────────────────
+
+  THEME: Dark Fantasy Grimoire — Atmospheric, immersive, cinematic.
+
+  The overall feel is a tavern at midnight. Warm candlelight amber against
+  deep shadow. The platform must feel like you are sitting inside the world,
+  not looking at a dashboard about it. Every screen is layered over a
+  full-viewport D&D dungeon background image with a heavy dark overlay —
+  the world is always visible but never distracting.
+
+  The design language is NOT:
+    × Clean SaaS / Linear / Vercel minimal flat
+    × Bright or high-saturation
+    × Generic dark mode (#000 + white text)
+    × Skeuomorphic parchment/wood textures
+
+  The design language IS:
+    ✓ Glass morphism panels floating over a living world background
+    ✓ Warm amber and gold as the only accent color — never blue, never purple
+    ✓ Readable at a glance — stat numbers must be instantly scannable
+    ✓ Atmospheric but not cluttered — negative space is intentional
+    ✓ Subtle motion — hover lifts, glow pulses, no jarring transitions
+
+  Reference aesthetics:
+    - Baldur's Gate 3 (UI panels, warm palette)
+    - Obsidian / Raycast (glass panel pattern, tight information density)
+    - Foundry VTT (dark game UI with readable stat displays)
+
+
+────────────────────────────────────────────────────────────────────────────────
+2. COLOR PALETTE
+────────────────────────────────────────────────────────────────────────────────
+
+  All colors are defined as CSS custom properties in globals.css.
+
+  BACKGROUNDS
+    --background           #1a1510    Deep warm near-black (body base color)
+    Body overlay           rgba(0,0,0,0.62) over /public/dnd-background.jpg
+    Glass panel fill       rgba(20, 14, 8, 0.52)  — dark amber-tinted glass
+    Stat card fill         rgba(255,255,255,0.05)  — very subtle lift from glass
+    Hover / active item    rgba(255,255,255,0.08)
+
+  TEXT
+    --foreground           #e8dcc8    Primary text — warm parchment off-white
+    Secondary text         #9ca3af    (Tailwind gray-400) — labels, metadata
+    Muted / disabled text  #4b5563    (Tailwind gray-600) — placeholder, hints
+    White emphasis         #ffffff    Bold stat values, headings
+
+  AMBER PALETTE  (the only accent — used for CTAs, highlights, active states)
+    --amber-highlight      #E2C086    Light gold — hover states, modifier text,
+                                      link text, thin decorative lines
+    --amber-main           #B58B4C    Mid amber — button fill, active borders,
+                                      avatar ring, progress bar fill
+    --amber-shadow         #5C3D1E    Dark brown — button border, depth shadow,
+                                      pressed button state
+
+  SEMANTIC COLORS  (used for conditions, health, feedback only)
+    Critical / danger      red-500    (#ef4444) — HP critical, death saves
+    Warning / caution      amber-500  (#f59e0b) — conditions like frightened
+    Info / magic           blue-400   (#60a5fa) — temp HP, spell slots
+    Success / stable       green-500  (#22c55e) — stabilized, full HP
+    Overlay backdrop       rgba(0,0,0,0.75) — modal backgrounds
+
+  BORDERS
+    Panel edge             rgba(255,255,255,0.08) — glass panel border
+    Section divider        rgba(255,255,255,0.05) — within-panel separators
+    Amber active border    rgba(181,139,76,0.30)  — hovered stat cards,
+                                                    focused inputs
+
+
+────────────────────────────────────────────────────────────────────────────────
+3. TYPOGRAPHY
+────────────────────────────────────────────────────────────────────────────────
+
+  FONTS IN USE
+    Geist Sans     — primary UI font for all body text, labels, inputs, buttons.
+                     Loaded via next/font/google as --font-geist-sans.
+    Geist Mono     — monospace for dice results, damage numbers, code snippets.
+                     Loaded via next/font/google as --font-geist-mono.
+    Ibarra Real Nova — serif display font for atmospheric headings only
+                     (campaign titles, chapter breaks, opening narration titles).
+                     Imported from Google Fonts in globals.css.
+                     Use sparingly — it signals "you are in the world."
+
+  TYPE SCALE
+    Display heading (campaign title, hero)   text-3xl / text-4xl, font-bold,
+                                              Ibarra Real Nova if decorative
+    Page heading (section titles)            text-xl, font-bold, text-white
+    Panel label (stat category headers)      text-[10px], uppercase,
+                                              tracking-wider, font-bold,
+                                              text-gray-500
+    Body / narration text                    text-sm, text-foreground (#e8dcc8),
+                                              leading-relaxed
+    Stat value (HP, AC, score)               text-base or text-lg, font-bold,
+                                              text-white
+    Modifier / sub-value                     text-[11px], font-medium,
+                                              text-amber-highlight/70
+    Button label                             text-sm, font-semibold
+    Input placeholder                        text-sm, text-gray-600
+    Error / toast message                    text-xs or text-sm
+
+  NARRATION TEXT (story log entries)
+    The AI DM's narration is the most-read text in the app. It must be:
+    - text-sm, line-height 1.7 (leading-7 or leading-relaxed)
+    - text-foreground (#e8dcc8) — warm, not harsh white
+    - Max width constrained to ~65–70ch inside the center column
+    - No bold or italic applied automatically (the AI may use them in text)
+    - Player actions displayed in italic, text-amber-highlight/80
+
+
+────────────────────────────────────────────────────────────────────────────────
+4. COMPONENT STYLE GUIDE
+────────────────────────────────────────────────────────────────────────────────
+
+  GLASS PANELS  (.glass utility class)
+    background:       rgba(20, 14, 8, 0.52)
+    backdrop-filter:  blur(24px)
+    border:           1px solid rgba(255,255,255,0.08)
+    box-shadow:       0 4px 16px rgba(0,0,0,0.3)
+    border-radius:    12px (rounded-xl) for panels, 8px (rounded-lg) for cards
+    Used for: sidebar panels, character panel, dice log, modal bodies,
+              any floating UI element over the background.
+
+  BUTTONS
+
+    Primary  (.btn-amber)
+      background:   linear-gradient(to bottom, #E2C086 0%, #B58B4C 10%,
+                    #B58B4C 90%, #5C3D1E 100%)
+      color:        #2D1B0A (very dark brown — readable on amber)
+      border:       1px solid #5C3D1E
+      box-shadow:   inset 0 1px 0 rgba(255,255,255,0.4),
+                    0 2px 4px rgba(0,0,0,0.3),
+                    0 0 15px rgba(255,100,0,0.15)
+      border-radius: rounded-lg (8px)
+      hover:        brightness(1.1), translateY(-1px), glow intensifies
+      active:       translateY(+1px), inset shadow deepens
+      Use for: "Send Action", "Create Campaign", "Roll Stats", "Archive"
+
+    Secondary / Ghost
+      background:   transparent
+      border:       1px solid rgba(255,255,255,0.12)
+      color:        text-gray-300
+      hover:        border-color rgba(255,255,255,0.24), text-white
+      Use for: "Cancel", "Back", "View Sheet →" text links
+
+    Destructive
+      Same ghost style, but border-red-500/40 and text-red-400 on hover.
+      Use for: "Confirm Archive" final action.
+
+    Disabled state (all button types)
+      opacity-40, cursor-not-allowed, no hover/active effects.
+
+  INPUTS & TEXTAREAS
+    background:    rgba(255,255,255,0.05)
+    border:        1px solid rgba(255,255,255,0.10)
+    border-radius: rounded-lg (8px)
+    color:         text-foreground
+    placeholder:   text-gray-600
+    focus:         border-amber-main/50, ring-1 ring-amber-main/20,
+                   outline: none
+    padding:       px-4 py-2.5 (inputs), px-4 py-3 (textareas)
+    Do NOT use a white or light background on any input — kills the atmosphere.
+
+  STAT CARDS  (AC, Speed, Prof, ability scores)
+    background:    rgba(255,255,255,0.05)
+    border:        1px solid rgba(255,255,255,0.05)
+    border-radius: rounded-xl (12px)
+    padding:       p-3 (compact) or p-2.5 (dense grid)
+    hover:         border-amber-main/30 (subtle amber edge on hover)
+    Label:         10px uppercase gray-500
+    Value:         font-bold white text-base
+    Modifier:      11px amber-highlight/70
+
+  BADGES / CONDITION CHIPS
+    border-radius: rounded-full
+    padding:       px-2 py-0.5
+    text:          text-xs font-medium
+    Colors by severity:
+      red    — bg-red-500/20, text-red-300, border-red-500/30
+      amber  — bg-amber-500/20, text-amber-300, border-amber-500/30
+      gold   — bg-amber-main/20, text-amber-highlight, border-amber-main/30
+      gray   — bg-white/10, text-gray-300, border-white/20
+
+  HP BAR
+    Track:         bg-white/10, rounded-full, h-2.5
+    Fill:          gradient — green-500 → yellow-500 → red-600 as HP drops
+                   (>60% HP: green, 30–60%: yellow, <30%: red)
+    Transition:    width transition 0.4s ease on HP change
+    Critical pulse: at <15% HP the bar pulses with a red glow animation
+
+  XP BAR
+    Track:         bg-white/10, rounded-full, h-1.5 (slimmer than HP)
+    Fill:          amber-main (#B58B4C)
+    Transition:    width transition 0.6s ease on XP gain
+    Level label:   "Level N" left, "X / Y XP" right, both 10px gray-500
+
+  MODALS
+    Backdrop:      rgba(0,0,0,0.75) full-screen overlay
+    Panel:         .glass + rounded-2xl, max-w-lg or max-w-2xl centered
+    Header:        text-xl font-bold text-white, border-b border-white/10, p-6
+    Body:          p-6, text-sm text-foreground
+    Footer:        p-6 border-t border-white/10, flex gap-3 justify-end
+    Animation:     fade-in + scale from 0.95 → 1.0, 150ms ease-out
+
+  TOAST NOTIFICATIONS
+    Position:      fixed bottom-4 right-4
+    Style:         .glass, rounded-xl, px-4 py-3, text-sm
+    Info toast:    border-white/20, text-foreground
+    Success toast: border-green-500/30, text-green-300
+    Error toast:   border-red-500/30, text-red-300
+    Duration:      auto-dismiss after 4 seconds
+    Animation:     slide up from bottom + fade in
+
+  SCROLLBARS
+    All scrollable areas use the .custom-scrollbar class (scrollbar hidden).
+    Scroll position communicated by content fade gradients at top/bottom edges.
+
+
+────────────────────────────────────────────────────────────────────────────────
+5. LAYOUT SYSTEM
+────────────────────────────────────────────────────────────────────────────────
+
+  GAME SCREEN  (/campaign/[id]/play)
+
+    Full viewport, no outer scroll. Three columns:
+
+    ┌──────────────────┬────────────────────────────────┬──────────────────┐
+    │  DICE LOG        │         STORY LOG              │  CHARACTER PANEL │
+    │  + INITIATIVE    │     (scrolls internally)       │  (scrolls        │
+    │  TRACKER         │                                │   internally)    │
+    │                  │  ───────────────────────────── │                  │
+    │  w-64 (16rem)    │      ACTION PANEL (bottom)     │  w-80 (20rem)    │
+    │                  │                                │                  │
+    └──────────────────┴────────────────────────────────┴──────────────────┘
+
+    Left column:   w-64, glass panel, border-r border-white/10
+    Center column: flex-1, no panel background (content sits on bg image)
+                   Internal story log has its own glass scroll container
+    Right column:  w-80, glass panel, border-l border-white/10
+
+    Top bar (above all three columns):
+      h-14, glass, border-b border-white/10
+      Campaign name (Ibarra Real Nova, italic, amber-highlight) — left
+      Current scene label (text-xs, gray-400) — center
+      "← Dashboard" link (text-xs, gray-400, hover amber-highlight) — right
+
+  DM CONSOLE  (/campaign/[id]/dm-console)
+    Same three-column shell.
+    Left column:   Party Overview (scrollable character cards)
+    Center column: Story Log + DM Narration Input (bottom)
+    Right column:  AI Copilot Panel (top half) + DM Toolbox (bottom half)
+
+  DASHBOARD  (/dashboard)
+    Max-width container (max-w-6xl, centered).
+    Top navbar: h-16, glass, sticky.
+    Campaign grid: 3 columns on desktop, 2 on tablet.
+    Campaign cards: .glass, rounded-2xl, p-5, hover: border-amber-main/20
+
+  AUTH PAGES  (/login  /register)
+    Full viewport background image (same as game).
+    Single centered card: max-w-sm, .glass, rounded-2xl, p-8.
+    Logo above card (centered, Ibarra Real Nova, text-2xl).
+
+  LANDING PAGE  (/)
+    Full viewport hero. Background image fills screen.
+    Hero content centered, vertically centered.
+    Max-w-2xl content block.
+
+  SPACING SCALE
+    Tight (within a stat group):    gap-2 / gap-2.5 / p-2.5
+    Standard (panel sections):      gap-4 / p-4
+    Comfortable (panel padding):    gap-6 / p-6
+    Loose (between major regions):  gap-8 / p-8
+    Never mix spacing scales within a single component.
+
+
+────────────────────────────────────────────────────────────────────────────────
+6. DARK MODE / LIGHT MODE
+────────────────────────────────────────────────────────────────────────────────
+
+  DARK MODE ONLY.
+
+  The `dark` class is hardcoded on the <html> element in layout.tsx. There is
+  no light mode. The background image + warm amber palette define a singular
+  visual identity — a light mode version would break the atmosphere entirely.
+
+  The ThemeProvider and ThemeToggle components have been removed from the
+  codebase. Do not reintroduce them. Do not add light mode variants.
+
+  If a user's OS is in light mode, the platform still renders dark.
+
+
+────────────────────────────────────────────────────────────────────────────────
+7. MOTION & INTERACTION
+────────────────────────────────────────────────────────────────────────────────
+
+  PRINCIPLES
+    - Motion signals state change, not decoration.
+    - All transitions are short: 150ms–300ms.
+    - No bouncy springs, no full-page slide animations.
+    - The world behind the glass panels does not animate (fixed background).
+
+  DEFINED ANIMATIONS
+    Button hover:         translateY(-1px) + brightness(1.1), 200ms ease
+    Button active:        translateY(+1px), 100ms ease
+    Modal open:           opacity 0→1 + scale 0.95→1.0, 150ms ease-out
+    Modal close:          opacity 1→0 + scale 1.0→0.95, 100ms ease-in
+    Toast slide-in:       translateY(+8px)→0 + opacity 0→1, 200ms ease
+    HP bar change:        width transition 400ms ease
+    XP bar fill:          width transition 600ms ease
+    HP critical pulse:    glow keyframe animation at 2s interval (red)
+    Story log new entry:  new message fades in from opacity-0, 300ms ease
+    "DM is thinking":     animated ellipsis pulse, 1.2s cycle
+
+  AVOID
+    × Rotation animations on any interactive element
+    × Parallax scrolling
+    × Looping ambient animations (candle flicker, etc.) — too distracting
+    × Page-level transition animations between routes
+
+
+────────────────────────────────────────────────────────────────────────────────
+8. THE STORY LOG (center column — primary UX surface)
+────────────────────────────────────────────────────────────────────────────────
+
+  The story log is where 80% of user attention is focused. It requires the
+  most typographic and visual care of any component.
+
+  MESSAGE TYPES AND VISUAL TREATMENT
+
+    AI DM Narration
+      Left-edge:    2px solid amber-main/40 bar
+      Label:        "Dungeon Master" in amber-highlight, text-xs, font-semibold
+      Body:         text-sm, text-foreground, leading-relaxed
+      Background:   glass (subtle, rgba(20,14,8,0.3))
+      Padding:      p-4, rounded-xl
+
+    Player Action
+      Left-edge:    2px solid white/20 bar
+      Label:        Character name in white, text-xs, font-semibold
+      Body:         text-sm italic, text-foreground/80
+      Background:   transparent (no card)
+      Padding:      py-2 px-4
+
+    Combat Log Entry
+      Left-edge:    2px solid red-500/40 bar
+      Label:        "Combat" in red-400, text-xs
+      Body:         text-xs, text-gray-300, font-mono (damage numbers)
+      Background:   rgba(239,68,68,0.05)
+      Padding:      p-3, rounded-lg
+
+    Dice Roll Entry
+      Left-edge:    2px solid amber-main/20 bar
+      Label:        Character name + die type, text-xs, gray-400
+      Body:         "Rolled [result] on d20 → Total: [N]"
+                    Result number in font-mono, font-bold, amber-highlight
+      Background:   transparent
+      Padding:      py-2 px-4
+
+    System / Scene Update
+      Centered, italic, text-amber-main/60, text-xs
+      "─── Scene: [description] ───"
+      No card, no border
+
+    "DM is thinking..." indicator
+      Same layout as AI DM Narration card but body is replaced by
+      three animated dots (pulse animation, amber-main color).
+      Removed from DOM when the real response arrives.
+
+  SCROLL BEHAVIOR
+    - Auto-scrolls to the bottom when a new message is added.
+    - If the user has manually scrolled up, auto-scroll pauses.
+    - A "Jump to latest" button appears (fixed bottom-center of the log)
+      when the user is scrolled more than 200px above the bottom.
+    - On click, smooth-scrolls back to bottom and resume auto-scroll.
+
+
+────────────────────────────────────────────────────────────────────────────────
+9. INITIATIVE TRACKER (combat state — left column)
+────────────────────────────────────────────────────────────────────────────────
+
+  Replaces (or overlays) the dice log when combat is active.
+
+  Header bar:     "Round N" — amber-highlight, font-bold, text-sm
+  Turn list:      Vertical list of combatants, sorted by initiative desc.
+
+  Each combatant row:
+    Active turn:   full-width highlight, border-l-2 border-amber-main,
+                   bg-amber-main/10, text-white
+    Inactive:      text-gray-400
+    Name:          text-sm, font-medium
+    HP display:    "NN/NN HP" text-xs font-mono, color matches HP threshold
+    AC display:    shield icon + number, text-xs, gray-400
+    Conditions:    small colored dots (matching badge colors), max 3 shown
+
+  Monster rows:   Name text in red-400/80 to distinguish from players.
+  Dead combatants: Struck through, opacity-40, stays in list (historical).
+
+  Advance Turn button:
+    Only visible to the DM (Human mode) or auto-advances (AI mode).
+    Small ghost button at the bottom of the tracker: "End Turn →"
+
+
+────────────────────────────────────────────────────────────────────────────────
+10. KEY UI PATTERNS
+────────────────────────────────────────────────────────────────────────────────
+
+  SECTION LABEL PATTERN
+    Used consistently to title subsections inside panels:
+      text-[10px], font-bold, uppercase, tracking-wider, text-gray-500
+      border-b border-white/5 pb-2 mb-3
+    Example: "ABILITY SCORES", "CONDITIONS", "ACTIVE QUESTS"
+
+  EMPTY STATE PATTERN
+    Centered inside container, flex col, gap-2:
+      Icon or illustration (optional): opacity-30
+      Primary message: text-sm text-gray-400
+      Secondary hint: text-xs text-gray-600
+      CTA button (when applicable): btn-amber or ghost
+
+  LOADING SKELETON PATTERN
+    For async data that hasn't loaded:
+      Placeholder bars: rounded-md, bg-white/5, animate-pulse
+      Match the height/width of the expected content
+
+  COPY-TO-CLIPBOARD PATTERN
+    Inline: small copy icon button (IconCopy, 14px), text-gray-500
+    On click: icon switches to checkmark for 2 seconds (green-400)
+    No toast needed for clipboard copies — the icon state is enough.
+
+  ERROR INLINE PATTERN
+    Below the offending input field:
+      text-xs, text-red-400, mt-1
+      Does not use an icon — text alone is sufficient
+
+  CONFIRM DESTRUCTIVE ACTION PATTERN
+    Two-step: initial modal (summary + Archive button) →
+    second modal (explicit warning + Confirm / Cancel).
+    The confirm button is ghost style with destructive colors
+    until the user types the campaign name (optional gate).
+
+
+────────────────────────────────────────────────────────────────────────────────
+11. MOBILE RESPONSIVENESS
+────────────────────────────────────────────────────────────────────────────────
+
+  CURRENT SCOPE: Desktop-first. Minimum supported width is 1024px (lg breakpoint).
+  The three-column game layout requires at least ~900px to be usable.
+
+  FUTURE SCOPE (FUTURE-7 in PRD):
+    Mobile layout would collapse to a single-column tab-based view:
+      Bottom tab bar: Story | Character | Dice | Combat
+    Not in current scope — do not add responsive breakpoints below 1024px
+    unless explicitly requested.
+
+  FOR NOW:
+    - Use overflow-x: hidden on body to prevent horizontal scroll on smaller
+      windows.
+    - Auth pages (/login, /register) are already naturally responsive as
+      single centered cards.
+    - Dashboard grid collapses from 3 cols to 2 cols at lg → md breakpoint.
+      Add sm:grid-cols-1 for anything below 640px.
+
+
+────────────────────────────────────────────────────────────────────────────────
+12. ACCESSIBILITY
+────────────────────────────────────────────────────────────────────────────────
+
+  CONTRAST
+    Primary text (#e8dcc8) on glass panel (rgba(20,14,8,0.52) over dark bg):
+      Effective background ≈ #0f0b07. Contrast ratio ≈ 9:1. WCAG AA pass.
+    Amber highlight (#E2C086) on dark bg: contrast ≈ 7:1. WCAG AA pass.
+    Gray-400 (#9ca3af) labels on dark bg: contrast ≈ 4.5:1. WCAG AA pass.
+    Gray-600 (#4b5563) hints: contrast ≈ 2.5:1. Acceptable for placeholder only
+      (never use for required-reading content).
+
+  FOCUS STATES
+    All interactive elements must have a visible focus ring:
+      focus-visible:outline-none focus-visible:ring-2
+      focus-visible:ring-amber-main/60 focus-visible:ring-offset-0
+    The default browser blue focus ring is overridden everywhere.
+
+  KEYBOARD NAVIGATION
+    Minimum keyboard-navigable flows (per NFR-6 in PRD):
+      - Login and register forms
+      - Send action (Enter key in textarea submits)
+      - Roll dice (button reachable via Tab)
+    Modal focus trap: when a modal opens, focus moves to the modal.
+    Escape key closes dismissible modals (Join Campaign, Character Sheet).
+    Escape does NOT close confirmation modals (Archive) — requires explicit click.
+
+  SEMANTIC HTML
+    Use <button> for actions, <a> for navigation, <input>/<textarea> for forms.
+    Stat cards are <div> (not interactive) — no role="button" unless clickable.
+    Story log is a live region: aria-live="polite" on the log container so
+    screen readers announce new messages without interrupting the user.
+
+  REDUCED MOTION
+    Wrap all CSS animations in @media (prefers-reduced-motion: no-preference).
+    When reduced motion is preferred: disable HP pulse, toast slide, modal scale.
+    Opacity transitions (fade in/out) are retained — they carry meaning.
+
+
+────────────────────────────────────────────────────────────────────────────────
+13. WHAT NOT TO BUILD
+────────────────────────────────────────────────────────────────────────────────
+
+  These patterns break the design language and must be avoided:
+
+  × White or light-gray backgrounds on any component inside the game
+  × Blue, purple, or green as an accent color (amber is the only accent)
+  × Rounded-full on rectangular panels or cards (only for avatars, badges)
+  × Heavy drop shadows that obscure the background (keep shadows subtle)
+  × Loading spinners inside buttons — disable the button and show a static
+    label change instead ("Sending..." not a spinner)
+  × Borders thicker than 1px (except the 2px story log left-edge indicators)
+  × Any font other than Geist Sans, Geist Mono, or Ibarra Real Nova
+  × Emoji in the UI unless explicitly placed by the AI DM in narration text
+  × Colored backgrounds on the main layout containers (panels only)
+  × Full-page loading screens — use skeleton states per component instead
+
+
+================================================================================
