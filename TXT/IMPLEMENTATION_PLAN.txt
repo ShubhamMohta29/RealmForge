@@ -516,6 +516,7 @@ Goal: Production-ready — performance, security, mobile, all edge cases handled
     [TODO]  "Start Session" button (DM only)
     [TODO]  Shareable invite link display
     [TODO]  List of joined players with character names
+    [TODO]  
 
   7.23  Sound effects (optional, opt-in)
     [TODO]  Dice roll sound
